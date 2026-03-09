@@ -5,8 +5,10 @@ import { eq } from "drizzle-orm";
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  createUser(user: any): Promise<User>;
   getAllUsers(): Promise<User[]>;
+  verifyEmail(userId: number): Promise<User>;
+  updateProfile(userId: number, updates: any): Promise<User>;
 
   createProject(project: InsertProject): Promise<Project>;
   getProject(id: number): Promise<Project | undefined>;
@@ -29,13 +31,29 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createUser(insertUser: any): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users);
+  }
+
+  async verifyEmail(userId: number): Promise<User> {
+    const [user] = await db.update(users)
+      .set({ emailVerified: true, emailOTP: null, emailOTPExpires: null })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async updateProfile(userId: number, updates: any): Promise<User> {
+    const [user] = await db.update(users)
+      .set(updates)
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
   }
 
   async createProject(project: InsertProject): Promise<Project> {

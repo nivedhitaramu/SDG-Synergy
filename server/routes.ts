@@ -1,15 +1,44 @@
 import type { Express } from "express";
-import { createServer, type Server } from "http";
+import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import session from "express-session";
 import bcrypt from "bcryptjs";
 import { insertUserSchema, insertProjectSchema } from "@shared/schema";
+import nodemailer from "nodemailer";
 
 declare module 'express-session' {
   interface SessionData {
     userId: number;
+  }
+}
+
+// Email transporter (using test account for development)
+const transporter = nodemailer.createTransport({
+  host: "smtp.ethereal.email",
+  port: 587,
+  auth: {
+    user: process.env.MAIL_USER || "demo@example.com",
+    pass: process.env.MAIL_PASS || "demo123"
+  }
+});
+
+function generateOTP(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function sendOTPEmail(email: string, otp: string): Promise<void> {
+  try {
+    await transporter.sendMail({
+      from: '"SDG Synergy" <noreply@sdgsynergy.com>',
+      to: email,
+      subject: "Verify your email - SDG Synergy",
+      text: `Your OTP is: ${otp}`,
+      html: `<b>Your OTP is:</b> ${otp}`
+    });
+  } catch (err) {
+    console.error("Failed to send OTP email:", err);
   }
 }
 
@@ -22,22 +51,28 @@ async function seedDatabase() {
       email: "green@ngo.org",
       password: hashedPassword,
       name: "Green Future Initiative",
+      phone: "+91-9876543210",
+      address: "123 Green Street, Chennai",
       orgType: "NGO",
-      location: "India",
+      location: "Chennai",
       sdgs: [13, 14, 15],
       expertise: "Conservation, wildlife",
-      projects: []
+      projects: [],
+      emailVerified: true
     });
     
     const user2 = await storage.createUser({
       email: "farming@biz.com",
       password: hashedPassword,
       name: "Sustainable Farming Corp",
+      phone: "+91-9876543211",
+      address: "456 Farm Road, Bangalore",
       orgType: "Business",
-      location: "India",
+      location: "Bangalore",
       sdgs: [2, 12, 15],
       expertise: "Agriculture, supply chain",
-      projects: []
+      projects: [],
+      emailVerified: true
     });
 
     const project1 = await storage.createProject({
@@ -70,7 +105,7 @@ export async function registerRoutes(
     secret: process.env.SESSION_SECRET || 'sdg_synergy_secret',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false } // false for HTTP development
+    cookie: { secure: false }
   }));
 
   // Seed DB
@@ -79,21 +114,57 @@ export async function registerRoutes(
   // Auth routes
   app.post(api.auth.register.path, async (req, res) => {
     try {
-      const input = insertUserSchema.parse(req.body);
+      const input = api.auth.register.input.parse(req.body);
       const existing = await storage.getUserByEmail(input.email);
       if (existing) {
         return res.status(400).json({ message: "Email already in use" });
       }
+      
       const hashedPassword = await bcrypt.hash(input.password, 10);
+      const otp = generateOTP();
+      const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+      
       const user = await storage.createUser({
         ...input,
-        password: hashedPassword
+        password: hashedPassword,
+        emailOTP: otp,
+        emailOTPExpires: otpExpires
       });
-      req.session.userId = user.id;
-      res.status(201).json(user);
+      
+      await sendOTPEmail(input.email, otp);
+      
+      res.status(201).json({ message: "OTP sent to email. Please verify.", userId: user.id });
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post(api.auth.verifyOTP.path, async (req, res) => {
+    try {
+      const { email, otp } = api.auth.verifyOTP.input.parse(req.body);
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(400).json({ message: "User not found" });
+      }
+      
+      if (!user.emailOTP || user.emailOTP !== otp) {
+        return res.status(400).json({ message: "Invalid OTP" });
+      }
+      
+      if (!user.emailOTPExpires || user.emailOTPExpires < new Date()) {
+        return res.status(400).json({ message: "OTP expired" });
+      }
+      
+      const verifiedUser = await storage.verifyEmail(user.id);
+      req.session.userId = verifiedUser.id;
+      res.status(200).json(verifiedUser);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
       }
       res.status(500).json({ message: "Internal server error" });
     }
@@ -103,9 +174,15 @@ export async function registerRoutes(
     try {
       const { email, password } = req.body;
       const user = await storage.getUserByEmail(email);
+      
       if (!user || !(await bcrypt.compare(password, user.password))) {
         return res.status(401).json({ message: "Invalid email or password" });
       }
+      
+      if (!user.emailVerified) {
+        return res.status(401).json({ message: "Please verify your email first" });
+      }
+      
       req.session.userId = user.id;
       res.status(200).json(user);
     } catch (err) {
@@ -124,6 +201,21 @@ export async function registerRoutes(
     const user = await storage.getUser(req.session.userId);
     if (!user) return res.status(401).json({ message: "Unauthorized" });
     res.status(200).json(user);
+  });
+
+  // Profile routes
+  app.patch(api.profile.update.path, async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const updates = api.profile.update.input.parse(req.body);
+      const user = await storage.updateProfile(req.session.userId, updates);
+      res.status(200).json(user);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   // Projects routes

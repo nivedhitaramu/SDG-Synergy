@@ -33,9 +33,31 @@ export const api = {
     register: {
       method: 'POST' as const,
       path: '/api/auth/register' as const,
-      input: insertUserSchema,
+      input: z.object({
+        email: z.string().email(),
+        password: z.string().min(8).max(8),
+        name: z.string(),
+        phone: z.string(),
+        address: z.string(),
+        orgType: z.string(),
+        location: z.string(),
+        sdgs: z.array(z.number()).length(3),
+        expertise: z.string(),
+      }),
       responses: {
-        201: z.custom<typeof users.$inferSelect>(),
+        201: z.object({ message: z.string(), userId: z.number() }),
+        400: errorSchemas.validation,
+      }
+    },
+    verifyOTP: {
+      method: 'POST' as const,
+      path: '/api/auth/verify-otp' as const,
+      input: z.object({
+        email: z.string().email(),
+        otp: z.string(),
+      }),
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
         400: errorSchemas.validation,
       }
     },
@@ -53,6 +75,23 @@ export const api = {
       path: '/api/auth/logout' as const,
       responses: {
         200: z.object({ message: z.string() }),
+      }
+    }
+  },
+  profile: {
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/profile/update' as const,
+      input: z.object({
+        email: z.string().email().optional(),
+        location: z.string().optional(),
+        orgType: z.string().optional(),
+        sdgs: z.array(z.number()).length(3).optional(),
+      }),
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+        400: errorSchemas.validation,
+        401: errorSchemas.unauthorized,
       }
     }
   },
