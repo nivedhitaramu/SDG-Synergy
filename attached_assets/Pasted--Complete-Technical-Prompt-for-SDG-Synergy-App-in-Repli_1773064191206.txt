@@ -1,0 +1,50 @@
+**Complete Technical Prompt for SDG Synergy App in Replit**
+
+You are an expert full-stack developer. Build a complete, functional web application called "SDG Synergy" in Replit using HTML, CSS, JavaScript (with Bootstrap for responsive UI), Node.js/Express for the backend, SQLite for the database, and simple AI-like matching logic (no external APIs needed—use rule-based similarity scoring). The app aligns with SDG goals (primary: 17 Partnerships; secondary: 9 Industry/Innovation; tertiary: 4 Quality Education) from the IDeathon 5.0 concept. Host it as a full-stack Replit project with live preview.
+
+### Core Features (Match PDF Description)
+- **User Authentication**: Register/login with email/password (hash passwords with bcrypt). Profiles include: name, organization type (NGO, Business, Government, Individual), location, SDG interests (multi-select from 17 UN SDGs, e.g., checkboxes for 1-17), expertise/resources (text areas), active projects (list with descriptions, needed resources).
+- **AI-Powered Matchmaking**: 
+  - Compute similarity score between users/projects: 40% SDG overlap (Jaccard similarity), 30% expertise keyword match (simple TF-IDF or cosine similarity using arrays), 20% location proximity (basic string match or geocode if possible, fallback to country), 10% resource complementarity.
+  - Dashboard shows "Pending Matches" (score >70%), "Active Matches", "Project Opportunities" with "Why matched" explanations, Accept/Reject buttons.
+- **Dashboard**:
+  - Personalized home: Welcome user, SDG focus badges, match cards (92% match example), project list (e.g., "Coastal Cleanup"), stats (e.g., 88 matches).
+  - Sections: Discover Matches, My Projects, Profile edit.
+- **Projects & Hubs**:
+  - Create/join projects: Title, SDGs, description, resources needed/b Offered, dates, members (up to 10).
+  - Collaborative hubs: List/join SDG-specific groups for chat-like comments (simple threaded comments).
+- **Real-Time Insights**: SDG progress tracker (dummy data: global stats per SDG), recommendations ("Tailored for your sustainability goals").
+- **Additional**: Multilingual toggle (English/Tamil basic via JS), gamification (badges for matches/projects), transparency dashboard (project progress logs).
+
+### UI/UX (Mimic PDF Mockups)
+- **Pages**: Home (landing with "Get Started"), Dashboard, Matches, Projects, Profile, SDG Goals explorer.
+- Modern, clean design: Green/blue theme (sustainability), cards for matches/projects, responsive mobile-first.
+- Navigation: Sidebar or top bar (Dashboard, Discover, Projects, Profile).
+- Examples from PDF: Match cards show % score, "Shared interest in SDG 15", project needs like "Cleanup volunteers 75-100 people".
+
+### Tech Stack & Implementation Steps
+1. **Frontend**: `index.html` with Bootstrap 5. Navbar, hero section on home. Use Fetch API for API calls. JS for dynamic matching display, localStorage for session.
+2. **Backend** (`server.js`): Express app, routes for /auth, /users, /matches, /projects. CORS enabled. SQLite DB schema:
+   ```
+   USERS: id, email, password, name, org_type, location, sdgs (JSON array), expertise (text), projects (JSON).
+   PROJECTS: id, title, sdgs (JSON), desc, resources_needed, resources_offered, owner_id, members (JSON).
+   MATCHES: id, user1_id, user2_id, project_id, score, status.
+   ```
+3. **Matching Algorithm** (in `/api/matches` endpoint):
+   ```js
+   function similarity(user1, user2) {
+     let sdgScore = jaccard(user1.sdgs, user2.sdgs); // Implement Jaccard
+     let expertiseScore = cosineSimilarity(tfidf(user1.expertise.split(',')), tfidf(user2.expertise.split(',')));
+     // etc., return weighted avg.
+   }
+   ```
+   Pre-compute matches on profile update or cron-like (every 5min).
+4. **Security/Feasibility**: Input validation, rate limiting. Challenges from PDF: Data encryption simulation (per-user views), bias mitigation (diverse dummy data), engagement (badges).
+5. **Deployment in Replit**:
+   - `package.json`: express, sqlite3, bcryptjs, body-parser, cors.
+   - Run command: `node server.js`.
+   - Static files served from `/public`.
+   - Seed DB with 10 dummy users/projects (NGOs, businesses matching PDF examples like "Green Future Initiative", "Sustainable Farming").
+6. **Scalability**: Modular (add real AI via OpenAI later), cloud-ready.
+
+Make it production-ready: Error handling, loading spinners, fully functional (no placeholders). Test with 5 sample users. Link to live demo at end. Prioritize MVP: auth + matching + dashboard in 1-2 hours dev time. [ppl-ai-file-upload.s3.amazonaws](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/111142610/ea23dec6-ae48-4c47-a4fd-27d972c4a964/IDEATHON-5.0-SECOND-ROUND-PPT-SDG-SYNERGY.pdf?AWSAccessKeyId=ASIA2F3EMEYE3A7XJ6V5&Signature=avfiu%2FH6jk3wu1MBgS5HsHudlsU%3D&x-amz-security-token=IQoJb3JpZ2luX2VjEGYaCXVzLWVhc3QtMSJIMEYCIQCY%2F9LXxrzpTMxJvzx1F56fPyixGL922pvZWWbOHlpeIQIhAMDewlYM7gMAVOyRpuqJgwLe%2BiQg26NDQZ3RdYhC9aYeKvMECC8QARoMNjk5NzUzMzA5NzA1IgwDhJM0epsiLBj2k2Eq0AQeNAJX2WNZgH%2BvtyuT%2BhwK29LbmFegXddSSd5X32RzQDEQMFnUe9NcNToMQKAWWxrjJIPlPY6Mzk%2F04mADd4kxl%2FSYt%2BxZsoKCp28sbpg9qH5%2FlQFEJYatijILLDBoPUfntT6HFUWnJk%2FRusRs6twQshCDxItUBU1ojNvXm39%2FFJ0tkUtG7Oqu1m0Sj9Mi4HZ2kY9FYgiJc%2BP8pLoczjVEpJIY%2BFQPcx9UKq9tn21vBjkuc4hU%2FvNdDVNr644EQLv76zMEmgVA%2FBxjZwpriiGI2d33LRcCk9zHHhuQQY3nxNGB%2FiKc0eTx6fWACgHnhfC0rR3NNVhS3ey2D5axIGfvATrUXVDFg2IdYXvesUH3fA6X5St1u2ydlyPybdorMpELUhJs1TgdyrO4YmWOwl5SfJVoKqJHoIRbC%2BmymAeOdtx4423C63sPyg5X9Cr6BgjtEeiPfJuyAvSH3cvaGJDL0hdeCwZkVPkCxqTokPsQlZ9jLdxjIAxSCYU2emqAS3SrgbT3RNVosc0MyX63lfQogAVG2W439DQzNIKwrJbsI%2FcgsB%2FV8pN2yHICaC80BFcq5RS1BZ6fdlPONjCnk%2FTjVM8ljG1ebSejC7TX%2F42lIPpAsNO1O65aX4S%2F8PA8nc%2BFgrULp%2FKSacfMEcpc92AejeONJAtS9SD9xHFpWMRDjVbmlZnHcSJyBbe%2Bu2PI4TwVf%2BEC2pV7LDx631ghgTUl88I8Qhb%2FQFkCzTHlSU9q96g4Zh0MvFtl6xzFt86Dq9RhugKvsQlKhhwPjfLiVFBgMM%2BYu80GOpcBUWIRLKihijCeO2rCYGNtUkyfdkvPI%2FZYx9eYyDUL6%2BT%2BxfTO3h0Ag37saKMqDoayOEdFUnw5uNEGAYsB42GHDCReMcEjWuib3SsSzo6piUILxAoWhOf2Rkbve2RbBpQyYcGWap7KKDO7kho6U74pAztYcCE2bkja9pjWvINobGRLA2O2mSZjf%2BGwV5u0t1YNxIRrq7er8g%3D%3D&Expires=1773064747)
