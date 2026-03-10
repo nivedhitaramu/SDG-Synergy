@@ -6,7 +6,6 @@ import { z } from "zod";
 import session from "express-session";
 import bcrypt from "bcryptjs";
 import { insertUserSchema, insertProjectSchema } from "@shared/schema";
-import nodemailer from "nodemailer";
 
 declare module 'express-session' {
   interface SessionData {
@@ -14,32 +13,13 @@ declare module 'express-session' {
   }
 }
 
-// Email transporter (using test account for development)
-const transporter = nodemailer.createTransport({
-  host: "smtp.ethereal.email",
-  port: 587,
-  auth: {
-    user: process.env.MAIL_USER || "demo@example.com",
-    pass: process.env.MAIL_PASS || "demo123"
-  }
-});
-
 function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// Simulated email sending (logs OTP for development)
 async function sendOTPEmail(email: string, otp: string): Promise<void> {
-  try {
-    await transporter.sendMail({
-      from: '"SDG Synergy" <noreply@sdgsynergy.com>',
-      to: email,
-      subject: "Verify your email - SDG Synergy",
-      text: `Your OTP is: ${otp}`,
-      html: `<b>Your OTP is:</b> ${otp}`
-    });
-  } catch (err) {
-    console.error("Failed to send OTP email:", err);
-  }
+  console.log(`\n📧 OTP for ${email}: ${otp}\n`);
 }
 
 async function seedDatabase() {
