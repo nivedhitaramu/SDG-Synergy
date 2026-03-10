@@ -105,8 +105,17 @@ export async function registerRoutes(
       const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
       
       const user = await storage.createUser({
-        ...input,
+        email: input.email,
         password: hashedPassword,
+        name: input.name,
+        phone: input.phone,
+        address: input.address,
+        orgType: input.orgType,
+        location: input.location,
+        sdgs: input.sdgs,
+        expertise: input.expertise,
+        projects: [],
+        emailVerified: false,
         emailOTP: otp,
         emailOTPExpires: otpExpires
       });
@@ -118,6 +127,7 @@ export async function registerRoutes(
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
       }
+      console.error("Registration error:", err);
       res.status(500).json({ message: "Internal server error" });
     }
   });

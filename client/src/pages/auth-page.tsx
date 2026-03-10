@@ -31,9 +31,7 @@ const INDIA_CITIES = [
 
 const registerSchema = z.object({
   email: z.string().email("Invalid email address"),
-  password: z.string()
-    .min(8, "Password must be exactly 8 characters")
-    .max(8, "Password must be exactly 8 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
   name: z.string().min(2, "Name is required"),
   phone: z.string().min(10, "Valid phone number required"),
   address: z.string().min(5, "Address is required"),
@@ -226,12 +224,12 @@ export default function AuthPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="reg-password">Password (exactly 8 characters)</Label>
+                      <Label htmlFor="reg-password">Password</Label>
                       <Input id="reg-password" type="password" {...registerForm.register("password")} />
                       {registerForm.formState.errors.password && (
                         <p className="text-sm text-destructive">{registerForm.formState.errors.password.message}</p>
                       )}
-                      <p className="text-xs text-muted-foreground">Password must be exactly 8 characters</p>
+                      <p className="text-xs text-muted-foreground">Minimum 8 characters</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
