@@ -45,7 +45,7 @@ export const api = {
         expertise: z.string().min(5, "Expertise required"),
       }),
       responses: {
-        201: z.object({ message: z.string(), userId: z.number() }),
+        201: z.object({ message: z.string(), userId: z.number(), otp: z.string().optional() }),
         400: errorSchemas.validation,
       }
     },

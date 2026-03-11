@@ -50,6 +50,7 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<"login" | "register">("login");
   const [registerStep, setRegisterStep] = useState<"form" | "otp">("form");
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const [devOtp, setDevOtp] = useState<string>("");
   const [selectedSDGs, setSelectedSDGs] = useState<number[]>([]);
   const [filteredCities, setFilteredCities] = useState<string[]>([]);
   const [cityInput, setCityInput] = useState("");
@@ -119,7 +120,9 @@ export default function AuthPage() {
   const onRegister = async (data: RegisterFormValues) => {
     try {
       const response = await apiRequest("POST", "/api/auth/register", data);
+      const body = await response.json();
       setRegisteredEmail(data.email);
+      if (body.otp) setDevOtp(body.otp); // dev mode: show OTP in UI
       setRegisterStep("otp");
     } catch (err: any) {
       console.error("Registration error:", err);
@@ -329,12 +332,32 @@ export default function AuthPage() {
                   </form>
                 ) : (
                   <div className="space-y-4">
-                    <Alert>
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        We've sent a 6-digit OTP to {registeredEmail}. Check your email and enter it below.
-                      </AlertDescription>
-                    </Alert>
+                    {devOtp ? (
+                      <Alert className="border-green-500 bg-green-50 dark:bg-green-950">
+                        <AlertCircle className="h-4 w-4 text-green-600" />
+                        <AlertDescription>
+                          <div className="text-green-800 dark:text-green-200 font-medium mb-1">
+                            Email service not configured — here is your OTP:
+                          </div>
+                          <div
+                            className="text-3xl font-bold tracking-widest text-green-700 dark:text-green-300 cursor-pointer select-all"
+                            onClick={() => setOtpForm(devOtp)}
+                            data-testid="dev-otp-display"
+                            title="Click to auto-fill"
+                          >
+                            {devOtp}
+                          </div>
+                          <div className="text-xs text-green-600 dark:text-green-400 mt-1">Click the code to auto-fill it below</div>
+                        </AlertDescription>
+                      </Alert>
+                    ) : (
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          We've sent a 6-digit OTP to <strong>{registeredEmail}</strong>. Check your inbox and enter it below.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     {otpError && (
                       <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
@@ -345,6 +368,7 @@ export default function AuthPage() {
                       <Label htmlFor="otp">6-Digit OTP</Label>
                       <Input
                         id="otp"
+                        data-testid="input-otp"
                         maxLength={6}
                         value={otpForm}
                         onChange={(e) => setOtpForm(e.target.value.replace(/[^0-9]/g, ''))}
@@ -365,6 +389,7 @@ export default function AuthPage() {
                       onClick={() => {
                         setRegisterStep("form");
                         setOtpForm("");
+                        setDevOtp("");
                       }}
                     >
                       Back to Registration

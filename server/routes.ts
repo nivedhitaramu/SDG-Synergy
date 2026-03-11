@@ -17,9 +17,45 @@ function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Simulated email sending (logs OTP for development)
 async function sendOTPEmail(email: string, otp: string): Promise<void> {
-  console.log(`\n📧 OTP for ${email}: ${otp}\n`);
+  const resendApiKey = process.env.RESEND_API_KEY;
+
+  if (resendApiKey) {
+    try {
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "SDG Synergy <onboarding@resend.dev>",
+          to: [email],
+          subject: "Your OTP - SDG Synergy",
+          html: `
+            <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e5e7eb;border-radius:8px;">
+              <h2 style="color:#16a34a;">SDG Synergy</h2>
+              <p>Hello,</p>
+              <p>Your email verification OTP is:</p>
+              <div style="font-size:36px;font-weight:bold;letter-spacing:8px;color:#16a34a;padding:16px 0;">${otp}</div>
+              <p style="color:#6b7280;">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
+            </div>
+          `,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.text();
+        console.error("Resend error:", err);
+      } else {
+        console.log(`📧 OTP email sent to ${email}`);
+      }
+    } catch (err) {
+      console.error("Failed to send email via Resend:", err);
+    }
+  } else {
+    // Fallback: log to console
+    console.log(`\n📧 [DEV] OTP for ${email}: ${otp}\n`);
+  }
 }
 
 async function seedDatabase() {
@@ -121,8 +157,14 @@ export async function registerRoutes(
       });
       
       await sendOTPEmail(input.email, otp);
-      
-      res.status(201).json({ message: "OTP sent to email. Please verify.", userId: user.id });
+
+      // In development (no email configured), return OTP so user can verify immediately
+      const isDev = !process.env.RESEND_API_KEY;
+      res.status(201).json({
+        message: "OTP sent. Please verify your email.",
+        userId: user.id,
+        otp: isDev ? otp : undefined,   // Only expose in dev mode
+      });
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
