@@ -18,43 +18,69 @@ function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-function createMailTransporter() {
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  if (!user || !pass) return null;
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: { user, pass },
-  });
-}
+const OTP_EMAIL_HTML = (otp: string) => `
+  <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e5e7eb;border-radius:8px;">
+    <h2 style="color:#16a34a;margin-bottom:4px;">SDG Synergy</h2>
+    <p style="color:#374151;">Your email verification code is:</p>
+    <div style="font-size:40px;font-weight:bold;letter-spacing:10px;color:#16a34a;padding:16px 0;">${otp}</div>
+    <p style="color:#6b7280;font-size:14px;">This code expires in 10 minutes. Do not share it with anyone.</p>
+  </div>
+`;
 
 async function sendOTPEmail(email: string, otp: string): Promise<boolean> {
-  const transporter = createMailTransporter();
-  if (!transporter) {
-    console.log(`\n📧 [DEV - no SMTP configured] OTP for ${email}: ${otp}\n`);
-    return false; // email not sent
+  // Option 1: Resend API (preferred)
+  const resendKey = process.env.RESEND_API_KEY;
+  if (resendKey) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${resendKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "SDG Synergy <onboarding@resend.dev>",
+          to: [email],
+          subject: "Your Verification Code - SDG Synergy",
+          html: OTP_EMAIL_HTML(otp),
+        }),
+      });
+      if (res.ok) {
+        console.log(`📧 OTP sent via Resend to ${email}`);
+        return true;
+      }
+      const err = await res.text();
+      console.error("Resend API error:", err);
+    } catch (err) {
+      console.error("Resend fetch error:", err);
+    }
   }
-  try {
-    await transporter.sendMail({
-      from: `"SDG Synergy" <${process.env.SMTP_USER}>`,
-      to: email,
-      subject: "Your OTP - SDG Synergy",
-      html: `
-        <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e5e7eb;border-radius:8px;">
-          <h2 style="color:#16a34a;">SDG Synergy</h2>
-          <p>Hello,</p>
-          <p>Your email verification OTP is:</p>
-          <div style="font-size:36px;font-weight:bold;letter-spacing:8px;color:#16a34a;padding:16px 0;">${otp}</div>
-          <p style="color:#6b7280;">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
-        </div>
-      `,
-    });
-    console.log(`📧 OTP email sent to ${email}`);
-    return true; // email sent successfully
-  } catch (err) {
-    console.error("Failed to send OTP email:", err);
-    return false;
+
+  // Option 2: Nodemailer / SMTP (fallback)
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  if (smtpUser && smtpPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+      await transporter.sendMail({
+        from: `"SDG Synergy" <${smtpUser}>`,
+        to: email,
+        subject: "Your Verification Code - SDG Synergy",
+        html: OTP_EMAIL_HTML(otp),
+      });
+      console.log(`📧 OTP sent via Gmail SMTP to ${email}`);
+      return true;
+    } catch (err) {
+      console.error("Nodemailer error:", err);
+    }
   }
+
+  // No email service configured — return false so UI shows the OTP
+  console.log(`\n📧 [DEV] No email service configured. OTP for ${email}: ${otp}\n`);
+  return false;
 }
 
 async function seedDatabase() {
