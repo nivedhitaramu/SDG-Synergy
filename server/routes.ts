@@ -6,6 +6,7 @@ import { z } from "zod";
 import session from "express-session";
 import bcrypt from "bcryptjs";
 import { insertUserSchema, insertProjectSchema } from "@shared/schema";
+import nodemailer from "nodemailer";
 
 declare module 'express-session' {
   interface SessionData {
@@ -17,44 +18,42 @@ function generateOTP(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-async function sendOTPEmail(email: string, otp: string): Promise<void> {
-  const resendApiKey = process.env.RESEND_API_KEY;
+function createMailTransporter() {
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!user || !pass) return null;
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: { user, pass },
+  });
+}
 
-  if (resendApiKey) {
-    try {
-      const response = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${resendApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "SDG Synergy <onboarding@resend.dev>",
-          to: [email],
-          subject: "Your OTP - SDG Synergy",
-          html: `
-            <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e5e7eb;border-radius:8px;">
-              <h2 style="color:#16a34a;">SDG Synergy</h2>
-              <p>Hello,</p>
-              <p>Your email verification OTP is:</p>
-              <div style="font-size:36px;font-weight:bold;letter-spacing:8px;color:#16a34a;padding:16px 0;">${otp}</div>
-              <p style="color:#6b7280;">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
-            </div>
-          `,
-        }),
-      });
-      if (!response.ok) {
-        const err = await response.text();
-        console.error("Resend error:", err);
-      } else {
-        console.log(`📧 OTP email sent to ${email}`);
-      }
-    } catch (err) {
-      console.error("Failed to send email via Resend:", err);
-    }
-  } else {
-    // Fallback: log to console
-    console.log(`\n📧 [DEV] OTP for ${email}: ${otp}\n`);
+async function sendOTPEmail(email: string, otp: string): Promise<boolean> {
+  const transporter = createMailTransporter();
+  if (!transporter) {
+    console.log(`\n📧 [DEV - no SMTP configured] OTP for ${email}: ${otp}\n`);
+    return false; // email not sent
+  }
+  try {
+    await transporter.sendMail({
+      from: `"SDG Synergy" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: "Your OTP - SDG Synergy",
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #e5e7eb;border-radius:8px;">
+          <h2 style="color:#16a34a;">SDG Synergy</h2>
+          <p>Hello,</p>
+          <p>Your email verification OTP is:</p>
+          <div style="font-size:36px;font-weight:bold;letter-spacing:8px;color:#16a34a;padding:16px 0;">${otp}</div>
+          <p style="color:#6b7280;">This OTP is valid for 10 minutes. Do not share it with anyone.</p>
+        </div>
+      `,
+    });
+    console.log(`📧 OTP email sent to ${email}`);
+    return true; // email sent successfully
+  } catch (err) {
+    console.error("Failed to send OTP email:", err);
+    return false;
   }
 }
 
@@ -156,14 +155,14 @@ export async function registerRoutes(
         emailOTPExpires: otpExpires
       });
       
-      await sendOTPEmail(input.email, otp);
+      const emailSent = await sendOTPEmail(input.email, otp);
 
-      // In development (no email configured), return OTP so user can verify immediately
-      const isDev = !process.env.RESEND_API_KEY;
       res.status(201).json({
-        message: "OTP sent. Please verify your email.",
+        message: emailSent
+          ? "OTP sent to your email. Please verify."
+          : "OTP generated. Email not configured — check server console.",
         userId: user.id,
-        otp: isDev ? otp : undefined,   // Only expose in dev mode
+        otp: emailSent ? undefined : otp,  // expose only when email not configured
       });
     } catch (err) {
       if (err instanceof z.ZodError) {
