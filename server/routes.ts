@@ -49,8 +49,9 @@ async function sendOTPEmail(email: string, otp: string): Promise<boolean> {
         console.log(`📧 OTP sent via Resend to ${email}`);
         return true;
       }
-      const err = await res.text();
-      console.error("Resend API error:", err);
+      const errBody = await res.text();
+      console.error(`Resend API error (${res.status}):`, errBody);
+      // Note: Free Resend accounts can only send to verified addresses unless a custom domain is set up
     } catch (err) {
       console.error("Resend fetch error:", err);
     }
