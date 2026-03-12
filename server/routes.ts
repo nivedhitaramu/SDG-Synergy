@@ -57,7 +57,31 @@ async function sendOTPEmail(email: string, otp: string): Promise<boolean> {
     }
   }
 
-  // Option 2: Nodemailer / SMTP (fallback)
+  // Option 2: Brevo SMTP (sends to any email, free plan, 300/day)
+  const brevoLogin = process.env.BREVO_LOGIN;
+  const brevoKey = process.env.BREVO_SMTP_KEY;
+  if (brevoLogin && brevoKey) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: "smtp-relay.brevo.com",
+        port: 587,
+        secure: false,
+        auth: { user: brevoLogin, pass: brevoKey },
+      });
+      await transporter.sendMail({
+        from: `"SDG Synergy" <${brevoLogin}>`,
+        to: email,
+        subject: "Your Verification Code - SDG Synergy",
+        html: OTP_EMAIL_HTML(otp),
+      });
+      console.log(`📧 OTP sent via Brevo SMTP to ${email}`);
+      return true;
+    } catch (err) {
+      console.error("Brevo SMTP error:", err);
+    }
+  }
+
+  // Option 3: Generic Gmail SMTP (requires App Password)
   const smtpUser = process.env.SMTP_USER;
   const smtpPass = process.env.SMTP_PASS;
   if (smtpUser && smtpPass) {
