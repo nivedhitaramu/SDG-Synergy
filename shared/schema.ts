@@ -12,11 +12,11 @@ export const users = pgTable("users", {
   name: text("name").notNull(),
   phone: text("phone").notNull(),
   address: text("address").notNull(),
-  orgType: text("org_type").notNull(), // NGO, Business, Government, Individual
+  orgType: text("org_type").notNull(),
   location: text("location").notNull(),
-  sdgs: jsonb("sdgs").$type<number[]>().notNull(), // Array of 3 primary SDG numbers 1-17
+  sdgs: jsonb("sdgs").$type<number[]>().notNull(),
   expertise: text("expertise").notNull(),
-  projects: jsonb("projects").$type<number[]>().notNull(), // Array of project IDs
+  projects: jsonb("projects").$type<number[]>().notNull(),
   createdAt: timestamp("created_at").defaultNow()
 });
 
@@ -28,7 +28,7 @@ export const projects = pgTable("projects", {
   resourcesNeeded: text("resources_needed").notNull(),
   resourcesOffered: text("resources_offered").notNull(),
   ownerId: integer("owner_id").notNull(),
-  members: jsonb("members").$type<number[]>().notNull(), // Array of user IDs
+  members: jsonb("members").$type<number[]>().notNull(),
   createdAt: timestamp("created_at").defaultNow()
 });
 
@@ -36,9 +36,20 @@ export const matches = pgTable("matches", {
   id: serial("id").primaryKey(),
   user1Id: integer("user1_id").notNull(),
   user2Id: integer("user2_id").notNull(),
-  projectId: integer("project_id"), // Optional
-  score: integer("score").notNull(), // 0-100 similarity score
-  status: text("status").notNull(), // 'pending', 'active', 'rejected'
+  projectId: integer("project_id"),
+  score: integer("score").notNull(),
+  aiReason: text("ai_reason"),
+  status: text("status").notNull(),
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+// Feed events for the SDG Impact Feed
+export const feedEvents = pgTable("feed_events", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(), // 'user_joined' | 'project_created' | 'match_made' | 'project_joined'
+  userId: integer("user_id").notNull(),
+  targetId: integer("target_id"),   // project id or matched user id
+  metadata: jsonb("metadata").$type<Record<string, any>>().notNull().default({}),
   createdAt: timestamp("created_at").defaultNow()
 });
 
@@ -49,9 +60,9 @@ export const insertUserSchema = createInsertSchema(users).omit({
   emailOTP: true,
   emailOTPExpires: true
 });
-
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
 export const insertMatchSchema = createInsertSchema(matches).omit({ id: true, createdAt: true });
+export const insertFeedEventSchema = createInsertSchema(feedEvents).omit({ id: true, createdAt: true });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -59,9 +70,15 @@ export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Match = typeof matches.$inferSelect;
 export type InsertMatch = z.infer<typeof insertMatchSchema>;
+export type FeedEvent = typeof feedEvents.$inferSelect;
+export type InsertFeedEvent = z.infer<typeof insertFeedEventSchema>;
 
-// Match with joined data for the frontend
 export type MatchWithDetails = Match & {
   otherUser?: User;
   project?: Project;
+};
+
+export type FeedEventWithDetails = FeedEvent & {
+  user?: Pick<User, 'id' | 'name' | 'orgType' | 'location' | 'sdgs'>;
+  project?: Pick<Project, 'id' | 'title' | 'sdgs'>;
 };
