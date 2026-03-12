@@ -68,8 +68,9 @@ async function sendOTPEmail(email: string, otp: string): Promise<boolean> {
         secure: false,
         auth: { user: brevoLogin, pass: brevoKey },
       });
+      const senderEmail = process.env.SENDER_EMAIL || brevoLogin;
       await transporter.sendMail({
-        from: `"SDG Synergy" <${brevoLogin}>`,
+        from: `"SDG Synergy" <${senderEmail}>`,
         to: email,
         subject: "Your Verification Code - SDG Synergy",
         html: OTP_EMAIL_HTML(otp),
