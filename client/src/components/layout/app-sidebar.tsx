@@ -1,12 +1,13 @@
 import { Link, useLocation } from "wouter";
 import { 
-  Home, 
   LayoutDashboard, 
   Target, 
   Briefcase, 
   UserCircle,
   LogOut,
-  Leaf
+  Leaf,
+  Rss,
+  Sparkles
 } from "lucide-react";
 import {
   Sidebar,
@@ -23,14 +24,15 @@ import { useAuth } from "@/hooks/use-auth";
 
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Discover Matches", url: "/matches", icon: Target },
+  { title: "Impact Feed", url: "/feed", icon: Rss },
+  { title: "AI Matches", url: "/matches", icon: Sparkles },
   { title: "Projects", url: "/projects", icon: Briefcase },
   { title: "My Profile", url: "/profile", icon: UserCircle },
   { title: "SDG Explorer", url: "/sdgs", icon: Globe },
 ];
 
 function Globe(props: any) {
-  return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinelinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+  return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
 }
 
 export function AppSidebar() {

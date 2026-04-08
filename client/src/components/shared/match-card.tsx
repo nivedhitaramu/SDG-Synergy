@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Check, X, Building2, MapPin } from "lucide-react";
+import { Check, X, Building2, MapPin, Brain } from "lucide-react";
 import { SDGBadge } from "./sdg-badge";
 import type { MatchWithDetails } from "@shared/schema";
 import { useUpdateMatchStatus } from "@/hooks/use-api";
@@ -57,6 +57,15 @@ export function MatchCard({ match }: { match: MatchWithDetails }) {
             <h4 className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Expertise Offered</h4>
             <p className="text-sm font-medium">{otherUser.expertise}</p>
           </div>
+
+          {match.aiReason && (
+            <div className="bg-primary/5 p-3 rounded-lg border border-primary/20">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-primary mb-1">
+                <Brain className="w-3.5 h-3.5" /> AI Match Insight
+              </div>
+              <p className="text-xs text-foreground/70 leading-relaxed">{match.aiReason}</p>
+            </div>
+          )}
         </div>
       </CardContent>
 

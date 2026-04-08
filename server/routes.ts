@@ -250,6 +250,14 @@ export async function registerRoutes(
       
       const verifiedUser = await storage.verifyEmail(user.id);
       req.session.userId = verifiedUser.id;
+
+      // Fire feed event: new member joined
+      storage.createFeedEvent({
+        type: 'user_joined',
+        userId: verifiedUser.id,
+        metadata: { name: verifiedUser.name, orgType: verifiedUser.orgType, location: verifiedUser.location, sdgs: verifiedUser.sdgs }
+      }).catch(console.error);
+
       res.status(200).json(verifiedUser);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -322,6 +330,15 @@ export async function registerRoutes(
         ownerId: req.session.userId,
         members: [req.session.userId]
       });
+
+      // Fire feed event
+      storage.createFeedEvent({
+        type: 'project_created',
+        userId: req.session.userId,
+        targetId: project.id,
+        metadata: { projectTitle: project.title, sdgs: project.sdgs }
+      }).catch(console.error);
+
       res.status(201).json(project);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -341,6 +358,15 @@ export async function registerRoutes(
     if (!req.session.userId) return res.status(401).json({ message: "Unauthorized" });
     try {
       const project = await storage.joinProject(Number(req.params.id), req.session.userId);
+
+      // Fire feed event
+      storage.createFeedEvent({
+        type: 'project_joined',
+        userId: req.session.userId,
+        targetId: project.id,
+        metadata: { projectTitle: project.title, sdgs: project.sdgs }
+      }).catch(console.error);
+
       res.status(200).json(project);
     } catch (err) {
       res.status(404).json({ message: "Project not found" });
@@ -348,6 +374,52 @@ export async function registerRoutes(
   });
 
   // Matches routes
+  app.post('/api/matches/request', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const { targetUserId, aiReason } = z.object({
+        targetUserId: z.number(),
+        aiReason: z.string().optional(),
+      }).parse(req.body);
+
+      const currentUser = await storage.getUser(req.session.userId);
+      const targetUser = await storage.getUser(targetUserId);
+      if (!currentUser || !targetUser) return res.status(404).json({ message: "User not found" });
+
+      // Check no existing match
+      const existing = await storage.getUserMatches(req.session.userId);
+      const alreadyMatched = existing.some(m => m.user1Id === targetUserId || m.user2Id === targetUserId);
+      if (alreadyMatched) return res.status(409).json({ message: "Already matched" });
+
+      // Compute SDG overlap score
+      const mySDGs = new Set(currentUser.sdgs);
+      const overlap = targetUser.sdgs.filter(s => mySDGs.has(s)).length;
+      const score = Math.round((overlap / 3) * 100);
+
+      const match = await storage.createMatch({
+        user1Id: req.session.userId,
+        user2Id: targetUserId,
+        score,
+        aiReason: aiReason || null,
+        status: 'pending',
+        projectId: null,
+      });
+
+      // Fire feed event
+      storage.createFeedEvent({
+        type: 'match_made',
+        userId: req.session.userId,
+        targetId: targetUserId,
+        metadata: { matchedWith: targetUser.name, score }
+      }).catch(console.error);
+
+      res.status(201).json(match);
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: err.errors[0].message });
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   app.get(api.matches.list.path, async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ message: "Unauthorized" });
     const matches = await storage.getUserMatches(req.session.userId);
@@ -368,6 +440,85 @@ export async function registerRoutes(
   app.get(api.users.list.path, async (req, res) => {
     const users = await storage.getAllUsers();
     res.status(200).json(users);
+  });
+
+  // SDG Impact Feed
+  app.get('/api/feed', async (req, res) => {
+    try {
+      const feed = await storage.getFeed(50);
+      res.status(200).json(feed);
+    } catch (err) {
+      console.error("Feed error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // AI Matchmaking — finds best org/NGO matches for current user's projects
+  app.get('/api/matches/ai-suggestions', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const currentUser = await storage.getUser(req.session.userId);
+      if (!currentUser) return res.status(404).json({ message: "User not found" });
+
+      const allUsers = await storage.getAllUsers();
+      const allProjects = await storage.getAllProjects();
+      const userProjects = allProjects.filter(p => p.ownerId === currentUser.id || p.members.includes(currentUser.id));
+
+      // Filter out self and already-matched users
+      const existingMatches = await storage.getUserMatches(currentUser.id);
+      const matchedUserIds = new Set(existingMatches.map(m => m.user1Id === currentUser.id ? m.user2Id : m.user1Id));
+
+      const candidates = allUsers.filter(u =>
+        u.id !== currentUser.id &&
+        u.emailVerified &&
+        !matchedUserIds.has(u.id)
+      );
+
+      if (candidates.length === 0) return res.status(200).json([]);
+
+      // Build a compact profile summary for the AI
+      const myProfile = `Name: ${currentUser.name}
+Org Type: ${currentUser.orgType}
+Location: ${currentUser.location}
+SDGs: ${currentUser.sdgs.join(', ')}
+Expertise: ${currentUser.expertise}
+Projects: ${userProjects.map(p => `${p.title} (${p.description.slice(0, 80)})`).join('; ') || 'None yet'}`;
+
+      const candidateList = candidates.map((u, i) => {
+        const theirProjects = allProjects.filter(p => p.ownerId === u.id || p.members.includes(u.id));
+        return `[${i}] ${u.name} | ${u.orgType} | ${u.location} | SDGs: ${u.sdgs.join(',')} | Expertise: ${u.expertise} | Projects: ${theirProjects.map(p => p.title).join(', ') || 'None'}`;
+      }).join('\n');
+
+      const aiResponse = await openai.chat.completions.create({
+        model: "gpt-5.1",
+        messages: [{
+          role: "system",
+          content: `You are an SDG collaboration matchmaker. Given a user profile and a list of candidates, rank the top matches and explain WHY each is a good collaboration partner. Focus on SDG alignment, complementary expertise, and project synergy. Be concise and specific.`
+        }, {
+          role: "user",
+          content: `MY PROFILE:\n${myProfile}\n\nCANDIDATES:\n${candidateList}\n\nReturn a JSON array of the top 5 matches (or fewer if less available). Each item: { "index": number, "score": number (0-100), "reason": string (2-3 sentences explaining the match) }. Score based on SDG overlap, expertise fit, and collaboration potential.`
+        }],
+        response_format: { type: "json_object" },
+        max_completion_tokens: 1000
+      });
+
+      const content = aiResponse.choices[0]?.message?.content || '{"matches":[]}';
+      const parsed = JSON.parse(content);
+      const aiMatches: Array<{index: number; score: number; reason: string}> = parsed.matches || parsed;
+
+      const results = aiMatches
+        .filter(m => m.index >= 0 && m.index < candidates.length)
+        .map(m => ({
+          user: candidates[m.index],
+          score: m.score,
+          aiReason: m.reason
+        }));
+
+      res.status(200).json(results);
+    } catch (err) {
+      console.error("AI matchmaking error:", err);
+      res.status(500).json({ message: "AI matchmaking failed" });
+    }
   });
 
   return httpServer;
