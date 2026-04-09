@@ -7,7 +7,9 @@ import {
   LogOut,
   Leaf,
   Rss,
-  Sparkles
+  Sparkles,
+  Sun,
+  Moon
 } from "lucide-react";
 import {
   Sidebar,
@@ -21,6 +23,7 @@ import {
   SidebarFooter
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "@/hooks/use-theme";
 
 const mainItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -38,6 +41,7 @@ function Globe(props: any) {
 export function AppSidebar() {
   const [location] = useLocation();
   const { logoutMutation } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <Sidebar className="border-r border-border">
@@ -70,11 +74,22 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t border-border/50">
+      <SidebarFooter className="p-4 border-t border-border/50 space-y-1">
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={toggleTheme}
+              data-testid="button-theme-toggle"
+              className="hover-elevate active-elevate-2 font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              <span>{theme === "dark" ? "Light Mode" : "Dark Mode"}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton 
               onClick={() => logoutMutation.mutate()} 
+              data-testid="button-logout"
               className="text-destructive hover:bg-destructive/10 hover-elevate active-elevate-2 font-medium transition-colors"
             >
               <LogOut className="w-5 h-5" />

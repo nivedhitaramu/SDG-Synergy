@@ -34,6 +34,71 @@ const OTP_EMAIL_HTML = (otp: string) => `
   </div>
 `;
 
+const NOTIFICATION_EMAIL_HTML = (title: string, message: string, ctaText: string, ctaUrl: string) => `
+  <div style="font-family:sans-serif;max-width:520px;margin:auto;padding:32px;border:1px solid #e5e7eb;border-radius:8px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+      <span style="font-size:24px;">🌿</span>
+      <h2 style="color:#16a34a;margin:0;">SDG Synergy</h2>
+    </div>
+    <h3 style="color:#111827;margin-bottom:8px;">${title}</h3>
+    <p style="color:#374151;line-height:1.6;">${message}</p>
+    <a href="${ctaUrl}" style="display:inline-block;margin-top:20px;padding:12px 24px;background:#16a34a;color:#fff;text-decoration:none;border-radius:6px;font-weight:600;">${ctaText}</a>
+    <p style="color:#9ca3af;font-size:12px;margin-top:24px;">You're receiving this because you have an account on SDG Synergy.</p>
+  </div>
+`;
+
+async function sendNotificationEmail(email: string, subject: string, title: string, message: string, ctaText: string, ctaUrl: string): Promise<boolean> {
+  const html = NOTIFICATION_EMAIL_HTML(title, message, ctaText, ctaUrl);
+  const brevoLogin = process.env.BREVO_LOGIN;
+  const brevoKey = process.env.BREVO_SMTP_KEY;
+  if (brevoLogin && brevoKey) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: "smtp-relay.brevo.com",
+        port: 587,
+        secure: false,
+        auth: { user: brevoLogin, pass: brevoKey },
+      });
+      const senderEmail = process.env.SENDER_EMAIL || brevoLogin;
+      await transporter.sendMail({
+        from: `"SDG Synergy" <${senderEmail}>`,
+        to: email,
+        subject,
+        html,
+      });
+      console.log(`📧 Notification sent via Brevo to ${email}: "${subject}"`);
+      return true;
+    } catch (err) {
+      console.error("Brevo notification error:", err);
+    }
+  }
+  const resendKey = process.env.RESEND_API_KEY;
+  if (resendKey) {
+    try {
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${resendKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "SDG Synergy <onboarding@resend.dev>",
+          to: [email],
+          subject,
+          html,
+        }),
+      });
+      if (res.ok) {
+        console.log(`📧 Notification sent via Resend to ${email}`);
+        return true;
+      }
+    } catch (err) {
+      console.error("Resend notification error:", err);
+    }
+  }
+  return false;
+}
+
 async function sendOTPEmail(email: string, otp: string): Promise<boolean> {
   // Option 1: Resend API (preferred)
   const resendKey = process.env.RESEND_API_KEY;
@@ -368,6 +433,22 @@ export async function registerRoutes(
         metadata: { projectTitle: project.title, sdgs: project.sdgs }
       }).catch(console.error);
 
+      // Notify project owner if they're not the one joining
+      if (project.ownerId !== req.session.userId) {
+        const joiner = await storage.getUser(req.session.userId);
+        const owner = await storage.getUser(project.ownerId);
+        if (joiner && owner) {
+          sendNotificationEmail(
+            owner.email,
+            `Someone offered help on your project`,
+            `New help offer on "${project.title}"`,
+            `<strong>${joiner.name}</strong> has offered to help with your project <strong>"${project.title}"</strong> on SDG Synergy. Log in to connect with them and coordinate next steps.`,
+            `View Project`,
+            `https://${req.headers.host}/projects`
+          ).catch(console.error);
+        }
+      }
+
       res.status(200).json(project);
     } catch (err) {
       res.status(404).json({ message: "Project not found" });
@@ -413,6 +494,16 @@ export async function registerRoutes(
         targetId: targetUserId,
         metadata: { matchedWith: targetUser.name, score }
       }).catch(console.error);
+
+      // Notify the target user via email
+      sendNotificationEmail(
+        targetUser.email,
+        `New connection request on SDG Synergy`,
+        `Someone wants to connect with you!`,
+        `<strong>${currentUser.name}</strong> has sent you a connection request on SDG Synergy with a <strong>${score}% SDG match score</strong>. Log in to review and accept or decline the request.`,
+        `View Connection Request`,
+        `https://${req.headers.host}/matches`
+      ).catch(console.error);
 
       res.status(201).json(match);
     } catch (err) {
