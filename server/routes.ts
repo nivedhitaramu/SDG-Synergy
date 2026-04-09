@@ -647,6 +647,67 @@ Projects: ${userProjects.map(p => `${p.title} (${p.description.slice(0, 80)})`).
     }
   });
 
+  // Chat route
+  app.post('/api/chat', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const { messages } = z.object({
+        messages: z.array(z.object({
+          role: z.enum(['user', 'assistant']),
+          content: z.string(),
+        }))
+      }).parse(req.body);
+
+      const user = await storage.getUser(req.session.userId);
+      const allProjects = await storage.getAllProjects();
+      const allEvents = await storage.getAllEvents();
+
+      const userContext = user ? `
+Current user: ${user.name} (${user.orgType}) from ${user.location}
+SDG Focus: SDGs ${user.sdgs.join(', ')}
+Expertise: ${user.expertise}
+Projects on platform: ${allProjects.length} | Upcoming events: ${allEvents.filter(e => new Date(e.date) >= new Date()).length}
+` : '';
+
+      const systemPrompt = `You are Synergy, the AI assistant for SDG Synergy — a sustainability networking platform where organisations and individuals connect around the UN Sustainable Development Goals (SDGs).
+
+${userContext}
+
+Your role:
+- Help users navigate the platform (matches, projects, events, profile, feed)
+- Explain any of the 17 UN SDGs in plain language
+- Suggest collaboration opportunities based on SDG alignment
+- Answer questions about sustainability, impact, and social enterprise in the Indian context
+- Be warm, concise, and action-oriented
+
+Platform features you can reference:
+- AI Matches: SDG-based matching with % scores and AI explanations
+- Projects: collaborative initiatives with a "Help Wanted" system (Technical, Funding, Mentorship, Volunteers, Marketing, Legal)
+- Events: Webinars, Field Visits, and Workshops tied to SDGs
+- Impact Feed: live activity stream of the community
+- Badges: achievements for community engagement
+- Profile: SDG focus, expertise, org type, location
+
+Keep responses under 150 words unless explaining an SDG in depth. Use bullet points where helpful. Always be encouraging and specific.`;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4.1",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...messages,
+        ],
+        max_completion_tokens: 400,
+      });
+
+      const reply = response.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
+      res.status(200).json({ reply });
+    } catch (err) {
+      if (err instanceof z.ZodError) return res.status(400).json({ message: "Invalid request" });
+      console.error("Chat error:", err);
+      res.status(500).json({ message: "Chat unavailable right now." });
+    }
+  });
+
   // Events routes
   app.get('/api/events', async (req, res) => {
     try {

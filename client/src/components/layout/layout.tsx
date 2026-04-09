@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./app-sidebar";
+import { ChatWidget } from "@/components/shared/chat-widget";
 
 const style = {
   "--sidebar-width": "18rem",
@@ -23,6 +24,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </main>
         </div>
       </div>
+      <ChatWidget />
     </SidebarProvider>
   );
 }
