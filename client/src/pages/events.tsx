@@ -90,6 +90,7 @@ function EventCard({ event, userId }: { event: SDGEvent; userId?: number }) {
           {event.sdgs.map(sdgId => {
             const sdg = SDG_DATA.find(s => s.id === sdgId);
             if (!sdg) return null;
+            const SdgIcon = sdg.icon;
             return (
               <span
                 key={sdgId}
@@ -98,7 +99,7 @@ function EventCard({ event, userId }: { event: SDGEvent; userId?: number }) {
                 title={sdg.title}
                 data-testid={`badge-sdg-${sdgId}-event-${event.id}`}
               >
-                {sdg.icon} SDG {sdgId}
+                <SdgIcon className="w-3 h-3" /> SDG {sdgId}
               </span>
             );
           })}
@@ -231,12 +232,13 @@ function CreateEventDialog({ onClose }: { onClose: () => void }) {
         <div className="grid grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-1">
           {SDG_DATA.map(sdg => {
             const selected = selectedSDGs.includes(sdg.id);
+            const SdgIcon = sdg.icon;
             return (
               <button
                 key={sdg.id}
                 type="button"
                 onClick={() => toggleSDG(sdg.id)}
-                className={`text-left px-2 py-1.5 rounded text-xs font-medium border transition-all ${
+                className={`flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium border transition-all ${
                   selected
                     ? "text-white border-transparent"
                     : "text-foreground border-border hover:border-primary/40"
@@ -244,7 +246,7 @@ function CreateEventDialog({ onClose }: { onClose: () => void }) {
                 style={selected ? { backgroundColor: sdg.color, borderColor: sdg.color } : {}}
                 data-testid={`button-sdg-${sdg.id}`}
               >
-                {sdg.icon} SDG {sdg.id}
+                <SdgIcon className="w-3 h-3" /> SDG {sdg.id}
               </button>
             );
           })}
