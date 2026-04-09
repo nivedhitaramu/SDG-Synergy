@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Check, X, Building2, MapPin, Brain } from "lucide-react";
+import { Check, X, Building2, MapPin, Brain, Mail, Phone, Home, CheckCircle2 } from "lucide-react";
 import { SDGBadge } from "./sdg-badge";
 import type { MatchWithDetails } from "@shared/schema";
 import { useUpdateMatchStatus } from "@/hooks/use-api";
@@ -90,9 +90,41 @@ export function MatchCard({ match }: { match: MatchWithDetails }) {
       )}
       
       {match.status === 'active' && (
-        <CardFooter className="p-4 pt-0 border-t border-border/30 bg-green-500/5">
-          <div className="w-full text-center text-sm font-semibold text-green-600 py-2">
-            Active Connection
+        <CardFooter className="p-0 border-t border-green-200 dark:border-green-900/40 bg-green-500/5 flex-col items-stretch">
+          <div className="flex items-center gap-2 px-5 py-3 border-b border-green-200/60 dark:border-green-900/30">
+            <CheckCircle2 className="w-4 h-4 text-green-600" />
+            <span className="text-sm font-semibold text-green-700 dark:text-green-400">Active Connection — Contact Details</span>
+          </div>
+          <div className="px-5 py-4 space-y-2.5">
+            <a
+              href={`mailto:${otherUser.email}`}
+              data-testid={`contact-email-${match.id}`}
+              className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors group"
+            >
+              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                <Mail className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <span className="font-medium">{otherUser.email}</span>
+            </a>
+            <a
+              href={`tel:${otherUser.phone}`}
+              data-testid={`contact-phone-${match.id}`}
+              className="flex items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors group"
+            >
+              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                <Phone className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <span className="font-medium">{otherUser.phone}</span>
+            </a>
+            <div
+              data-testid={`contact-address-${match.id}`}
+              className="flex items-start gap-2.5 text-sm text-foreground"
+            >
+              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Home className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <span className="font-medium">{otherUser.address}</span>
+            </div>
           </div>
         </CardFooter>
       )}
