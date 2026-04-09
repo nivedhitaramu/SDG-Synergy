@@ -27,6 +27,8 @@ export const projects = pgTable("projects", {
   description: text("description").notNull(),
   resourcesNeeded: text("resources_needed").notNull(),
   resourcesOffered: text("resources_offered").notNull(),
+  helpNeeded: boolean("help_needed").default(false),
+  helpTypes: jsonb("help_types").$type<string[]>().default([]),
   ownerId: integer("owner_id").notNull(),
   members: jsonb("members").$type<number[]>().notNull(),
   createdAt: timestamp("created_at").defaultNow()
