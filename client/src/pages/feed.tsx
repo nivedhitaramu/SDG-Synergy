@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Rss, UserPlus, FolderPlus, Users } from "lucide-react";
+import { Rss, UserPlus, FolderPlus, Users, CalendarDays, CalendarCheck } from "lucide-react";
 import { SDG_DATA } from "@/lib/sdgs";
 import { formatDistanceToNow } from "date-fns";
 
@@ -33,6 +33,16 @@ const EVENT_CONFIG: Record<string, { icon: any; color: string; label: (e: FeedEv
     icon: Users,
     color: "text-purple-600 bg-purple-100 dark:bg-purple-900/30",
     label: (e) => `${e.user?.name || "Someone"} joined the project: "${e.project?.title || e.metadata.projectTitle}"`,
+  },
+  event_created: {
+    icon: CalendarDays,
+    color: "text-orange-600 bg-orange-100 dark:bg-orange-900/30",
+    label: (e) => `${e.user?.name || "Someone"} created a new ${e.metadata.eventType?.replace('_', ' ') || "event"}: "${e.metadata.eventTitle}"`,
+  },
+  event_joined: {
+    icon: CalendarCheck,
+    color: "text-teal-600 bg-teal-100 dark:bg-teal-900/30",
+    label: (e) => `${e.user?.name || "Someone"} registered for: "${e.metadata.eventTitle}"`,
   },
 };
 

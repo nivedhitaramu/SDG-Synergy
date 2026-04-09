@@ -45,6 +45,19 @@ export const matches = pgTable("matches", {
   createdAt: timestamp("created_at").defaultNow()
 });
 
+export const events = pgTable("events", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  eventType: text("event_type").notNull(), // 'webinar' | 'field_visit' | 'workshop'
+  sdgs: jsonb("sdgs").$type<number[]>().notNull(),
+  date: timestamp("date").notNull(),
+  location: text("location").notNull(),
+  organizerId: integer("organizer_id").notNull(),
+  attendees: jsonb("attendees").$type<number[]>().notNull().default([]),
+  createdAt: timestamp("created_at").defaultNow()
+});
+
 // Feed events for the SDG Impact Feed
 export const feedEvents = pgTable("feed_events", {
   id: serial("id").primaryKey(),
@@ -65,6 +78,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
 export const insertMatchSchema = createInsertSchema(matches).omit({ id: true, createdAt: true });
 export const insertFeedEventSchema = createInsertSchema(feedEvents).omit({ id: true, createdAt: true });
+export const insertEventSchema = createInsertSchema(events).omit({ id: true, createdAt: true });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -74,6 +88,8 @@ export type Match = typeof matches.$inferSelect;
 export type InsertMatch = z.infer<typeof insertMatchSchema>;
 export type FeedEvent = typeof feedEvents.$inferSelect;
 export type InsertFeedEvent = z.infer<typeof insertFeedEventSchema>;
+export type SDGEvent = typeof events.$inferSelect;
+export type InsertSDGEvent = z.infer<typeof insertEventSchema>;
 
 export type MatchWithDetails = Match & {
   otherUser?: User;

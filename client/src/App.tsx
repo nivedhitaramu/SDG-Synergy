@@ -17,6 +17,7 @@ import ProjectsPage from "@/pages/projects";
 import ProfilePage from "@/pages/profile";
 import SDGsPage from "@/pages/sdgs";
 import FeedPage from "@/pages/feed";
+import EventsPage from "@/pages/events";
 import { useEffect } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -65,6 +66,9 @@ function Router() {
       </Route>
       <Route path="/feed">
         <ProtectedRoute component={FeedPage} />
+      </Route>
+      <Route path="/events">
+        <ProtectedRoute component={EventsPage} />
       </Route>
       
       <Route component={NotFound} />

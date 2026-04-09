@@ -9,7 +9,8 @@ import {
   Rss,
   Sparkles,
   Sun,
-  Moon
+  Moon,
+  CalendarDays
 } from "lucide-react";
 import {
   Sidebar,
@@ -30,6 +31,7 @@ const mainItems = [
   { title: "Impact Feed", url: "/feed", icon: Rss },
   { title: "AI Matches", url: "/matches", icon: Sparkles },
   { title: "Projects", url: "/projects", icon: Briefcase },
+  { title: "Events", url: "/events", icon: CalendarDays },
   { title: "My Profile", url: "/profile", icon: UserCircle },
   { title: "SDG Explorer", url: "/sdgs", icon: Globe },
 ];

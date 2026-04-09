@@ -5,7 +5,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import session from "express-session";
 import bcrypt from "bcryptjs";
-import { insertUserSchema, insertProjectSchema } from "@shared/schema";
+import { insertUserSchema, insertProjectSchema, insertEventSchema } from "@shared/schema";
 import nodemailer from "nodemailer";
 import OpenAI from "openai";
 import { computeBadges } from "@shared/badges";
@@ -644,6 +644,77 @@ Projects: ${userProjects.map(p => `${p.title} (${p.description.slice(0, 80)})`).
     } catch (err) {
       console.error("AI matchmaking error:", err);
       res.status(500).json({ message: "AI matchmaking failed" });
+    }
+  });
+
+  // Events routes
+  app.get('/api/events', async (req, res) => {
+    try {
+      const allEvents = await storage.getAllEvents();
+      res.status(200).json(allEvents);
+    } catch (err) {
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post('/api/events', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const input = insertEventSchema.parse({
+        ...req.body,
+        date: new Date(req.body.date),
+        organizerId: req.session.userId,
+        attendees: [req.session.userId],
+      });
+      const event = await storage.createEvent(input);
+
+      storage.createFeedEvent({
+        type: 'event_created',
+        userId: req.session.userId,
+        targetId: event.id,
+        metadata: { eventTitle: event.title, eventType: event.eventType, sdgs: event.sdgs }
+      }).catch(console.error);
+
+      res.status(201).json(event);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
+      }
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  app.post('/api/events/:id/join', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const event = await storage.joinEvent(Number(req.params.id), req.session.userId);
+
+      storage.createFeedEvent({
+        type: 'event_joined',
+        userId: req.session.userId,
+        targetId: event.id,
+        metadata: { eventTitle: event.title, eventType: event.eventType, sdgs: event.sdgs }
+      }).catch(console.error);
+
+      // Notify organizer if someone else joins
+      if (event.organizerId !== req.session.userId) {
+        const joiner = await storage.getUser(req.session.userId);
+        const organizer = await storage.getUser(event.organizerId);
+        if (joiner && organizer) {
+          sendNotificationEmail(
+            organizer.email,
+            `Someone registered for your event`,
+            `New attendee for "${event.title}"`,
+            `<strong>${joiner.name}</strong> has registered to attend your event <strong>"${event.title}"</strong> on SDG Synergy.`,
+            `View Event`,
+            `https://${req.headers.host}/events`
+          ).catch(console.error);
+        }
+      }
+
+      res.status(200).json(event);
+    } catch (err) {
+      res.status(404).json({ message: "Event not found" });
     }
   });
 
