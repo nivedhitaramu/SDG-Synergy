@@ -7,6 +7,7 @@ import { SDGBadge } from "@/components/shared/sdg-badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkles, Activity, Folders } from "lucide-react";
+import { BadgesSection } from "@/components/shared/badges-section";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 
@@ -79,6 +80,19 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Badges Widget */}
+        <Card className="border-border/50">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-display font-bold">Your Badges</h2>
+              <Button asChild variant="link" className="text-primary text-sm p-0 h-auto">
+                <Link href="/profile">View All</Link>
+              </Button>
+            </div>
+            <BadgesSection userId={user.id} compact />
+          </CardContent>
+        </Card>
 
         {/* Pending Matches */}
         <div>

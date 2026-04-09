@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Building2, MapPin, Mail, Calendar, Edit2 } from "lucide-react";
+import { Building2, MapPin, Mail, Calendar, Edit2, Trophy } from "lucide-react";
+import { BadgesSection } from "@/components/shared/badges-section";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 import { SDG_GOALS } from "@/lib/sdgs";
@@ -241,6 +242,18 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
         </div>
+        {/* Badges Section */}
+        <Card className="border-border/50 shadow-md">
+          <CardHeader>
+            <CardTitle className="font-display flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-yellow-500" />
+              Achievements & Badges
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BadgesSection userId={user.id} />
+          </CardContent>
+        </Card>
       </div>
     </AppLayout>
   );

@@ -8,6 +8,7 @@ import bcrypt from "bcryptjs";
 import { insertUserSchema, insertProjectSchema } from "@shared/schema";
 import nodemailer from "nodemailer";
 import OpenAI from "openai";
+import { computeBadges } from "@shared/badges";
 
 const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
@@ -440,6 +441,40 @@ export async function registerRoutes(
   app.get(api.users.list.path, async (req, res) => {
     const users = await storage.getAllUsers();
     res.status(200).json(users);
+  });
+
+  // Badges
+  app.get('/api/badges/:userId', async (req, res) => {
+    try {
+      const userId = Number(req.params.userId);
+      const user = await storage.getUser(userId);
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      const allMatches = await storage.getUserMatches(userId);
+      const allProjects = await storage.getAllProjects();
+
+      const activeMatchCount = allMatches.filter(m => m.status === 'active').length;
+      const ownedProjectCount = allProjects.filter(p => p.ownerId === userId).length;
+      const joinedProjectCount = allProjects.filter(p =>
+        p.ownerId !== userId && p.members.includes(userId)
+      ).length;
+
+      const badges = computeBadges({
+        userId,
+        emailVerified: user.emailVerified ?? false,
+        expertise: user.expertise,
+        address: user.address,
+        sdgs: user.sdgs,
+        activeMatchCount,
+        ownedProjectCount,
+        joinedProjectCount,
+      });
+
+      res.status(200).json(badges);
+    } catch (err) {
+      console.error("Badges error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
   });
 
   // SDG Impact Feed
