@@ -191,7 +191,7 @@ export default function ProjectsPage() {
         </Dialog>
       </div>
 
-      <Tabs defaultValue="all">
+      <Tabs defaultValue="mine">
         <TabsList className="mb-6">
           <TabsTrigger value="all" className="flex items-center gap-1.5" data-testid="tab-all-projects">
             <LayoutGrid className="w-4 h-4" /> All Projects ({allProjects.length})
@@ -255,7 +255,16 @@ export default function ProjectsPage() {
               {myProjects.map(project => <ProjectCard key={project.id} project={project} />)}
             </div>
           ) : (
-            <EmptyState message="You haven't joined or created any projects yet." />
+            <div className="text-center py-20 bg-muted/20 rounded-xl border border-dashed border-border">
+              <Briefcase className="w-10 h-10 mx-auto mb-3 opacity-30 text-muted-foreground" />
+              <p className="font-semibold text-foreground text-lg mb-1">No projects yet</p>
+              <p className="text-muted-foreground text-sm mb-6 max-w-xs mx-auto">
+                Launch your own project and let the community know what kind of help you need — volunteers, funding, mentors, and more.
+              </p>
+              <Button onClick={() => setOpen(true)} className="gap-2" data-testid="button-create-first-project">
+                <Plus className="w-4 h-4" /> Create Your First Project
+              </Button>
+            </div>
           )}
         </TabsContent>
       </Tabs>
