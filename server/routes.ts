@@ -779,5 +779,110 @@ Keep responses under 150 words unless explaining an SDG in depth. Use bullet poi
     }
   });
 
+  // Admin stats
+  app.get('/api/admin/stats', async (req, res) => {
+    if (!req.session.userId) return res.status(401).json({ message: "Unauthorized" });
+    try {
+      const allUsers = await storage.getAllUsers();
+      const allProjects = await storage.getAllProjects();
+      const allEvents = await storage.getAllEvents();
+
+      // Matches: pull all from both sides
+      let allMatchRows: any[] = [];
+      for (const u of allUsers) {
+        const m = await storage.getUserMatches(u.id);
+        allMatchRows.push(...m);
+      }
+      // Deduplicate by id
+      const seenIds = new Set<number>();
+      const allMatches = allMatchRows.filter(m => {
+        if (seenIds.has(m.id)) return false;
+        seenIds.add(m.id);
+        return true;
+      });
+
+      // SDG frequency across all users
+      const sdgCount: Record<number, number> = {};
+      for (const u of allUsers) {
+        for (const sdg of (u.sdgs || [])) {
+          sdgCount[sdg] = (sdgCount[sdg] || 0) + 1;
+        }
+      }
+      const topSDGs = Object.entries(sdgCount)
+        .map(([id, count]) => ({ id: Number(id), count }))
+        .sort((a, b) => b.count - a.count);
+
+      // Org type breakdown
+      const orgTypes: Record<string, number> = {};
+      for (const u of allUsers) {
+        orgTypes[u.orgType] = (orgTypes[u.orgType] || 0) + 1;
+      }
+
+      // Location breakdown
+      const locations: Record<string, number> = {};
+      for (const u of allUsers) {
+        const loc = u.location?.trim();
+        if (loc) locations[loc] = (locations[loc] || 0) + 1;
+      }
+      const topLocations = Object.entries(locations)
+        .map(([city, count]) => ({ city, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8);
+
+      // Help types across help-wanted projects
+      const helpTypes: Record<string, number> = {};
+      for (const p of allProjects) {
+        if ((p as any).helpNeeded) {
+          for (const t of ((p as any).helpTypes || [])) {
+            helpTypes[t] = (helpTypes[t] || 0) + 1;
+          }
+        }
+      }
+
+      // User growth: count by join date (last 14 days)
+      const now = new Date();
+      const growth: { date: string; count: number }[] = [];
+      for (let i = 13; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const dateStr = d.toISOString().split('T')[0];
+        const count = allUsers.filter(u => {
+          const joined = u.createdAt ? new Date(u.createdAt).toISOString().split('T')[0] : '';
+          return joined === dateStr;
+        }).length;
+        growth.push({ date: dateStr, count });
+      }
+
+      // Recent users (last 10)
+      const recentUsers = [...allUsers]
+        .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime())
+        .slice(0, 10)
+        .map(u => ({ id: u.id, name: u.name, orgType: u.orgType, location: u.location, sdgs: u.sdgs, createdAt: u.createdAt, emailVerified: u.emailVerified }));
+
+      res.status(200).json({
+        totals: {
+          users: allUsers.length,
+          projects: allProjects.length,
+          helpWantedProjects: allProjects.filter(p => (p as any).helpNeeded).length,
+          matches: allMatches.length,
+          activeMatches: allMatches.filter(m => m.status === 'active').length,
+          pendingMatches: allMatches.filter(m => m.status === 'pending').length,
+          events: allEvents.length,
+          upcomingEvents: allEvents.filter(e => new Date(e.date) >= now).length,
+          verifiedUsers: allUsers.filter(u => u.emailVerified).length,
+        },
+        topSDGs,
+        orgTypes,
+        topLocations,
+        helpTypes,
+        growth,
+        recentUsers,
+      });
+    } catch (err) {
+      console.error("Admin stats error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
   return httpServer;
 }

@@ -18,6 +18,7 @@ import ProfilePage from "@/pages/profile";
 import SDGsPage from "@/pages/sdgs";
 import FeedPage from "@/pages/feed";
 import EventsPage from "@/pages/events";
+import AdminPage from "@/pages/admin";
 import { useEffect } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
