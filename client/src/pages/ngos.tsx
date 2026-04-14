@@ -13,6 +13,7 @@ import { SDG_DATA } from "@/lib/sdgs";
 import { saveApplication, hasApplied, generateApplicationId, VolunteerApplication } from "@/lib/volunteer-store";
 import { addSubmissionFromVolunteer } from "@/lib/help-submissions";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { Search, HandHeart, Building2, MapPin, Users, CheckCircle2, AlertCircle } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -36,6 +37,7 @@ const SDG_CATEGORIES = [
 function VolunteerFormModal({ ngo, open, onClose }: { ngo: NGO | null; open: boolean; onClose: () => void }) {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [form, setForm] = useState({
     fullName: "", email: "", phone: "", startDate: "", endDate: "",
@@ -65,9 +67,10 @@ function VolunteerFormModal({ ngo, open, onClose }: { ngo: NGO | null; open: boo
       reason: form.reason,
       appliedAt: new Date().toISOString(),
       status: "pending",
+      userId: user?.id,
     };
     saveApplication(app);
-    addSubmissionFromVolunteer(app);
+    addSubmissionFromVolunteer(app, user?.id);
     setSubmitted(true);
     toast({ title: t("volunteerForm.successTitle"), description: t("volunteerForm.successDesc", { project: ngo.projectName, ngo: ngo.ngoName }) });
   }

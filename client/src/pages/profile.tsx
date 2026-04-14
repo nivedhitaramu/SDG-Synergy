@@ -27,15 +27,15 @@ const INDIA_CITIES = [
 
 type ProfileCert = { certId: string; volunteerName: string; projectName: string; ngoName: string; startDate: string; endDate: string; issueDate: string };
 
-function getAllProfileCerts(): ProfileCert[] {
+function getAllProfileCerts(userId: number): ProfileCert[] {
   const certs: ProfileCert[] = [];
   try {
     const sub: any[] = JSON.parse(localStorage.getItem("sdg_submission_certs") || "[]");
-    certs.push(...sub);
+    for (const c of sub) if (c.userId === userId) certs.push(c);
   } catch { /* ignore */ }
   try {
     const legacy: any[] = JSON.parse(localStorage.getItem("sdg_certificates") || "[]");
-    for (const c of legacy) if (!certs.find(x => x.certId === c.certId)) certs.push(c);
+    for (const c of legacy) if (c.userId === userId && !certs.find(x => x.certId === c.certId)) certs.push(c);
   } catch { /* ignore */ }
   return certs;
 }
@@ -57,7 +57,7 @@ export default function ProfilePage() {
     sdgs: user?.sdgs || [],
   });
 
-  useEffect(() => { setProfileCerts(getAllProfileCerts()); }, []);
+  useEffect(() => { if (user?.id) setProfileCerts(getAllProfileCerts(user.id)); }, [user?.id]);
 
   if (!user) return null;
 

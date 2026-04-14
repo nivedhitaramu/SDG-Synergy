@@ -46,12 +46,13 @@ type AllCert = {
   source: "submission" | "legacy";
 };
 
-function getAllCertificates(): AllCert[] {
+function getAllCertificates(userId?: number): AllCert[] {
   const certs: AllCert[] = [];
   // New submission-based certs
   try {
     const subCerts: SubmissionCertificate[] = JSON.parse(localStorage.getItem("sdg_submission_certs") || "[]");
     for (const c of subCerts) {
+      if (userId !== undefined && c.userId !== userId) continue;
       certs.push({ certId: c.certId, volunteerName: c.volunteerName, projectName: c.projectName, ngoName: c.ngoName, startDate: c.startDate, endDate: c.endDate, issueDate: c.issueDate, source: "submission" });
     }
   } catch { /* ignore */ }
@@ -59,6 +60,7 @@ function getAllCertificates(): AllCert[] {
   try {
     const legacyCerts: any[] = JSON.parse(localStorage.getItem("sdg_certificates") || "[]");
     for (const c of legacyCerts) {
+      if (userId !== undefined && c.userId !== userId) continue;
       if (!certs.find(x => x.certId === c.certId)) {
         certs.push({ certId: c.certId, volunteerName: c.volunteerName, projectName: c.projectName, ngoName: c.ngoName, startDate: c.startDate, endDate: c.endDate, issueDate: c.issueDate, source: "legacy" });
       }
@@ -238,7 +240,7 @@ export default function VolunteerHubPage() {
 
     unified.sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime());
     setRecords(unified);
-    setAllCerts(getAllCertificates());
+    setAllCerts(getAllCertificates(user?.id));
   }
 
   useEffect(() => { loadData(); }, [user]);

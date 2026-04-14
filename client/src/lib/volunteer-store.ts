@@ -14,6 +14,7 @@ export interface VolunteerApplication {
   appliedAt: string;
   status: "pending" | "completed";
   completedAt?: string;
+  userId?: number;
 }
 
 export interface Certificate {
@@ -25,6 +26,7 @@ export interface Certificate {
   startDate: string;
   endDate: string;
   issueDate: string;
+  userId?: number;
 }
 
 const APPLICATIONS_KEY = "sdg_volunteer_applications";
@@ -72,6 +74,7 @@ export function markCompleted(applicationId: string): Certificate {
     startDate: app.startDate,
     endDate: app.endDate,
     issueDate: new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }),
+    userId: app.userId,
   };
 
   const certs: Certificate[] = JSON.parse(localStorage.getItem(CERTIFICATES_KEY) || "[]");

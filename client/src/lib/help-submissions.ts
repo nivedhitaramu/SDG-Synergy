@@ -61,6 +61,7 @@ export interface SubmissionCertificate {
   startDate: string;
   endDate: string;
   issueDate: string;
+  userId?: number;
 }
 
 export interface AppNotification {
@@ -375,6 +376,7 @@ export function generateCertificateFromSubmission(submissionId: string): Submiss
     startDate: sub.preferredStartDate,
     endDate: sub.preferredEndDate,
     issueDate: new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }),
+    userId: sub.userId,
   };
   const certs: SubmissionCertificate[] = JSON.parse(localStorage.getItem(SUBMISSION_CERTS_KEY) || "[]");
   certs.push(cert);
