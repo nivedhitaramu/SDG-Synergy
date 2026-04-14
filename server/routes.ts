@@ -234,8 +234,59 @@ async function seedDatabase() {
     console.log("Seed complete.");
   }
 
-  // Ensure we always have enough sample projects
+  // Ensure we always have enough sample projects and events
   await ensureSampleProjects();
+  await ensureSampleEvents();
+}
+
+async function ensureSampleEvents() {
+  const existing = await storage.getAllEvents();
+  if (existing.length >= 3) return;
+
+  const usersList = await storage.getAllUsers();
+  const user1 = usersList.find(u => u.email === "green@ngo.org");
+  const user2 = usersList.find(u => u.email === "farming@biz.com");
+  if (!user1 || !user2) return;
+
+  const sampleEvents = [
+    {
+      title: "SDG Action Webinar: Climate Solutions for South India",
+      description: "A live panel discussion bringing together NGOs, businesses, and local government representatives to share practical climate action strategies aligned with SDG 13. Learn how grassroots initiatives in Tamil Nadu are tackling air quality, urban flooding, and renewable energy adoption.",
+      eventType: "webinar",
+      sdgs: [7, 11, 13],
+      date: new Date("2026-05-10T10:00:00.000Z"),
+      location: "https://meet.google.com/sdg-climate-south-india",
+      organizerId: user1.id,
+      attendees: [user1.id, user2.id],
+    },
+    {
+      title: "Coastal Ecosystem Field Visit — Marina Beach Cleanup",
+      description: "Join volunteers, marine biologists, and conservation experts for a hands-on coastal cleanup and biodiversity survey at Marina Beach, Chennai. Participants will learn about marine SDGs, plastic pollution tracking, and how to engage their communities in ocean conservation.",
+      eventType: "field_visit",
+      sdgs: [14, 15, 13],
+      date: new Date("2026-05-24T07:00:00.000Z"),
+      location: "Marina Beach, Chennai, Tamil Nadu",
+      organizerId: user1.id,
+      attendees: [user1.id],
+    },
+    {
+      title: "Sustainable Agriculture Workshop: Zero-Waste Farming Practices",
+      description: "A full-day interactive workshop for smallholder farmers and agribusinesses on composting, organic pest management, water-efficient irrigation, and connecting to ethical supply chains. Organised in partnership with Tamil Nadu Agricultural University.",
+      eventType: "workshop",
+      sdgs: [2, 12, 15],
+      date: new Date("2026-06-07T09:00:00.000Z"),
+      location: "Tamil Nadu Agricultural University, Coimbatore",
+      organizerId: user2.id,
+      attendees: [user2.id],
+    },
+  ];
+
+  for (const evt of sampleEvents) {
+    const all = await storage.getAllEvents();
+    if (all.find(e => e.title === evt.title)) continue;
+    await storage.createEvent(evt as any);
+  }
+  console.log("Sample events ensured.");
 }
 
 async function ensureSampleProjects() {
