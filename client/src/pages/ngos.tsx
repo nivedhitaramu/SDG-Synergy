@@ -162,7 +162,122 @@ function VolunteerFormModal({ ngo, open, onClose }: { ngo: NGO | null; open: boo
   );
 }
 
-function NGOCard({ ngo, onVolunteer }: { ngo: NGO; onVolunteer: (ngo: NGO) => void }) {
+function CollabFormModal({ ngo, open, onClose }: { ngo: NGO | null; open: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const [form, setForm] = useState({
+    orgName: "", contactName: "", email: "", phone: "", proposal: "",
+  });
+  const [submitted, setSubmitted] = useState(false);
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    setForm(f => ({ ...f, [e.target.name]: e.target.value }));
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!ngo) return;
+    const sub = {
+      id: `collab_${Date.now()}`,
+      submissionType: "offer_help" as const,
+      applicantName: form.contactName,
+      applicantEmail: form.email,
+      applicantPhone: form.phone,
+      organizationName: form.orgName,
+      ngoId: ngo.id,
+      ngoName: ngo.ngoName,
+      projectName: ngo.projectName,
+      helpCategory: "Partnership / Collaboration",
+      message: form.proposal,
+      availability: "",
+      skillsOffered: form.orgName,
+      preferredStartDate: "",
+      preferredEndDate: "",
+      status: "new" as const,
+      submittedAt: new Date().toISOString(),
+      sourceForm: "NGO Directory — Request Collaboration",
+      certificateEligible: false,
+      userId: user?.id,
+    };
+    try {
+      const existing = JSON.parse(localStorage.getItem("sdg_help_submissions") || "[]");
+      existing.unshift(sub);
+      localStorage.setItem("sdg_help_submissions", JSON.stringify(existing));
+    } catch { /* ignore */ }
+    setSubmitted(true);
+    toast({ title: "Collaboration request sent!", description: `Your request to partner with ${ngo.ngoName} has been submitted.` });
+  }
+
+  function handleClose() {
+    setSubmitted(false);
+    setForm({ orgName: "", contactName: "", email: "", phone: "", proposal: "" });
+    onClose();
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Request Collaboration</DialogTitle>
+          <DialogDescription>
+            {ngo ? `${ngo.ngoName} — ${ngo.projectName}` : ""}
+          </DialogDescription>
+        </DialogHeader>
+
+        {submitted ? (
+          <div className="flex flex-col items-center gap-4 py-8 text-center">
+            <CheckCircle2 className="w-16 h-16 text-green-500" />
+            <h3 className="text-xl font-bold text-foreground">Request Sent!</h3>
+            <p className="text-muted-foreground">Your collaboration request has been submitted to <strong>{ngo?.ngoName}</strong>. They will reach out to you soon.</p>
+            <Button onClick={handleClose}>{t("common.close")}</Button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2">
+                <Label htmlFor="orgName">Organisation / Company Name *</Label>
+                <Input id="orgName" name="orgName" required placeholder="Your organisation name"
+                  value={form.orgName} onChange={handleChange} data-testid="input-collab-org" />
+              </div>
+              <div>
+                <Label htmlFor="contactName">Contact Person *</Label>
+                <Input id="contactName" name="contactName" required placeholder="Your full name"
+                  value={form.contactName} onChange={handleChange} data-testid="input-collab-name" />
+              </div>
+              <div>
+                <Label htmlFor="email">Email *</Label>
+                <Input id="email" name="email" type="email" required placeholder="you@example.com"
+                  value={form.email} onChange={handleChange} data-testid="input-collab-email" />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input id="phone" name="phone" placeholder="+91 98765 43210"
+                  value={form.phone} onChange={handleChange} data-testid="input-collab-phone" />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="proposal">Collaboration Proposal *</Label>
+                <Textarea id="proposal" name="proposal" required rows={4}
+                  placeholder="Describe how you'd like to collaborate, what resources or expertise you can offer…"
+                  value={form.proposal} onChange={handleChange} data-testid="input-collab-proposal" />
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button type="button" variant="outline" className="flex-1" onClick={handleClose}>
+                {t("common.cancel")}
+              </Button>
+              <Button type="submit" className="flex-1" data-testid="button-collab-submit">
+                Send Request
+              </Button>
+            </div>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function NGOCard({ ngo, onVolunteer, onCollab }: { ngo: NGO; onVolunteer: (ngo: NGO) => void; onCollab: (ngo: NGO) => void }) {
   const { t } = useTranslation();
   const applied = hasApplied(ngo.id);
 
@@ -230,7 +345,7 @@ function NGOCard({ ngo, onVolunteer }: { ngo: NGO; onVolunteer: (ngo: NGO) => vo
               </Button>
             )
           ) : (
-            <Button variant="outline" className="w-full" data-testid={`button-collab-${ngo.id}`}>
+            <Button variant="outline" className="w-full" onClick={() => onCollab(ngo)} data-testid={`button-collab-${ngo.id}`}>
               <Building2 className="w-4 h-4 mr-2" /> {t("ngos.requestCollab")}
             </Button>
           )}
@@ -247,6 +362,8 @@ export default function NGOsPage() {
   const [sdgFilter, setSdgFilter] = useState(0);
   const [selectedNGO, setSelectedNGO] = useState<NGO | null>(null);
   const [formOpen, setFormOpen] = useState(false);
+  const [collabNGO, setCollabNGO] = useState<NGO | null>(null);
+  const [collabOpen, setCollabOpen] = useState(false);
 
   const filtered = NGO_DATA.filter(n => {
     const matchSearch = search === "" ||
@@ -316,13 +433,16 @@ export default function NGOsPage() {
         ) : (
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5">
             {filtered.map(ngo => (
-              <NGOCard key={ngo.id} ngo={ngo} onVolunteer={n => { setSelectedNGO(n); setFormOpen(true); }} />
+              <NGOCard key={ngo.id} ngo={ngo}
+                onVolunteer={n => { setSelectedNGO(n); setFormOpen(true); }}
+                onCollab={n => { setCollabNGO(n); setCollabOpen(true); }} />
             ))}
           </div>
         )}
       </div>
 
       <VolunteerFormModal ngo={selectedNGO} open={formOpen} onClose={() => { setFormOpen(false); setSelectedNGO(null); }} />
+      <CollabFormModal ngo={collabNGO} open={collabOpen} onClose={() => { setCollabOpen(false); setCollabNGO(null); }} />
     </AppLayout>
   );
 }

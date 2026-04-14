@@ -233,6 +233,84 @@ async function seedDatabase() {
     });
     console.log("Seed complete.");
   }
+
+  // Ensure we always have enough sample projects
+  await ensureSampleProjects();
+}
+
+async function ensureSampleProjects() {
+  const existing = await storage.getAllProjects();
+  if (existing.length >= 6) return;
+
+  const usersList = await storage.getAllUsers();
+  const user1 = usersList.find(u => u.email === "green@ngo.org");
+  const user2 = usersList.find(u => u.email === "farming@biz.com");
+  if (!user1 || !user2) return;
+
+  const sampleProjects = [
+    {
+      title: "Urban Tree Planting Drive",
+      sdgs: [11, 13, 15],
+      description: "A city-wide initiative to plant 10,000 trees in urban neighbourhoods across Bangalore, improving air quality and reducing the urban heat island effect.",
+      resourcesNeeded: "Nursery saplings, weekend volunteers, digging tools",
+      resourcesOffered: "Community engagement training, event management support",
+      ownerId: user2.id,
+      members: [user2.id],
+      helpNeeded: false,
+      helpTypes: [],
+    },
+    {
+      title: "Clean Drinking Water for Rural Schools",
+      sdgs: [3, 4, 6],
+      description: "Installing water purification units and building sanitation facilities in 20 rural government schools in Tamil Nadu to ensure safe drinking water access.",
+      resourcesNeeded: "Funding for equipment, civil engineers, on-ground coordinators",
+      resourcesOffered: "Project management expertise, CSR reporting documentation",
+      ownerId: user1.id,
+      members: [user1.id],
+      helpNeeded: true,
+      helpTypes: ["Funding", "Technical", "Volunteers"],
+    },
+    {
+      title: "Women Entrepreneurship Incubator",
+      sdgs: [5, 8, 10],
+      description: "A 6-month incubation programme supporting rural women micro-entrepreneurs with mentorship, seed funding, and market linkages in Coimbatore district.",
+      resourcesNeeded: "Mentors with business expertise, small seed grants",
+      resourcesOffered: "Workspace, training curriculum, networking events",
+      ownerId: user2.id,
+      members: [user2.id],
+      helpNeeded: true,
+      helpTypes: ["Mentorship", "Funding"],
+    },
+    {
+      title: "Solar-Powered Community Library",
+      sdgs: [4, 7, 11],
+      description: "Building a solar-powered digital library in three underserved panchayats to provide children and youth access to quality educational content offline.",
+      resourcesNeeded: "Solar panels, tablets/e-readers, construction labour",
+      resourcesOffered: "Digital content library, training on device usage",
+      ownerId: user1.id,
+      members: [user1.id],
+      helpNeeded: true,
+      helpTypes: ["Technical", "Funding", "Volunteers"],
+    },
+    {
+      title: "Zero-Waste Farmers Market",
+      sdgs: [2, 12, 17],
+      description: "Establishing a weekly farmers market that connects organic smallholder farmers directly with urban consumers, eliminating plastic packaging and reducing food waste.",
+      resourcesNeeded: "Market space, logistics support, digital payment systems",
+      resourcesOffered: "Organic produce, farmer community network, sustainable packaging know-how",
+      ownerId: user2.id,
+      members: [user2.id],
+      helpNeeded: false,
+      helpTypes: [],
+    },
+  ];
+
+  for (const proj of sampleProjects) {
+    const existing = await storage.getAllProjects();
+    if (existing.find(p => p.title === proj.title)) continue;
+    await storage.createProject(proj as any);
+  }
+  console.log("Sample projects ensured.");
 }
 
 export async function registerRoutes(
