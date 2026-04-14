@@ -19,6 +19,9 @@ import SDGsPage from "@/pages/sdgs";
 import FeedPage from "@/pages/feed";
 import EventsPage from "@/pages/events";
 import AdminPage from "@/pages/admin";
+import NGOsPage from "@/pages/ngos";
+import VolunteerHubPage from "@/pages/volunteer-hub";
+import CertificatePage from "@/pages/certificate";
 import { useEffect } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -71,7 +74,17 @@ function Router() {
       <Route path="/events">
         <ProtectedRoute component={EventsPage} />
       </Route>
-      
+      <Route path="/ngos">
+        <ProtectedRoute component={NGOsPage} />
+      </Route>
+      <Route path="/volunteer-hub">
+        <ProtectedRoute component={VolunteerHubPage} />
+      </Route>
+      <Route path="/certificate/:certId" component={CertificatePage} />
+      <Route path="/admin">
+        <ProtectedRoute component={AdminPage} />
+      </Route>
+
       <Route component={NotFound} />
     </Switch>
   );

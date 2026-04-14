@@ -1,0 +1,231 @@
+Upgrade my existing SDG Synergy prototype app with the following features and data changes. This is a college project prototype, so use mock/demo data only. Do not use any external database with real NGO or volunteer data. Keep the UI clean, modern, mobile responsive, and easy to demo.
+
+TECH STACK / IMPLEMENTATION RULES:
+- Keep the current app structure and improve it without breaking existing pages.
+- If the project uses React, use react-i18next / i18next for multilingual support.
+- If the project is plain HTML/CSS/JS, create a translation object based language system with reusable keys.
+- Add support for 3 languages: English (en), Tamil (ta), Hindi (hi).
+- Add a language switcher in the navbar/header.
+- The selected language should instantly update all visible UI text.
+- Translate all major UI labels, buttons, headings, forms, project cards, volunteer flow text, certificate text, and dashboard text into English, Tamil, and Hindi.
+- Use Unicode-safe fonts and ensure Tamil and Hindi text render properly.
+- Since this is a sandbox/prototype, if persistent storage is unavailable, use local mock state / JSON arrays / in-memory demo data.
+- Do not remove existing SDG-based theme and design.
+
+MULTILINGUAL REQUIREMENTS:
+- Add translation files or translation dictionaries for:
+  - Home page
+  - NGO list page
+  - Project cards
+  - Volunteer form
+  - Dashboard / profile
+  - Certificate modal/page
+  - Buttons like Apply, Volunteer, Completed Volunteering, Download Certificate, Submit, Cancel
+- Default language should be English.
+- Allow switching between English / Tamil / Hindi from any page.
+- Keep NGO names in their original names, but translate descriptions, labels, and UI around them.
+
+VOLUNTEER COMPLETION + CERTIFICATE FEATURE:
+- In the project section, if a volunteer has already submitted for a volunteering opportunity, show a button called “Completed Volunteering”.
+- When the volunteer clicks it, mark the volunteering as completed in the UI.
+- Then generate a certificate for that volunteer using the values from the volunteer submission form.
+- Certificate must include:
+  - Volunteer full name
+  - Project name
+  - NGO name
+  - Start date
+  - End date
+  - Total volunteering period
+  - A sentence saying they have successfully completed volunteering
+  - Certificate issue date
+  - A unique certificate ID generated from mock logic
+- Add a clean certificate layout in the app, with SDG Synergy branding and a professional look.
+- Add a “Download Certificate” button.
+- For download, generate either:
+  1. a printable certificate page, or
+  2. a PDF using a frontend library if already supported.
+- This is prototype data, so certificate generation can be frontend-only.
+- The certificate should auto-fill the volunteer’s name and the submitted time period from the volunteer submission form.
+- If the user has not submitted a volunteer form yet, hide or disable the Completed Volunteering button.
+
+VOLUNTEER FORM REQUIREMENTS:
+- Ensure the volunteer submission form includes:
+  - Full name
+  - Email
+  - Phone number
+  - Project applying for
+  - NGO name
+  - Start date
+  - End date
+  - Availability / hours
+  - Skills / interests
+  - Reason for volunteering
+- Store this in demo state so it can be reused for the certificate.
+
+NGO / PROJECT DATA:
+Replace or extend the NGO listing with the following demo NGOs and projects. Create structured mock data for each NGO with:
+- id
+- ngoName
+- projectName
+- description
+- impact
+- sdgTags
+- location (mock Tamil Nadu / India locations are fine)
+- helpType: “requests_help” or “offers_help”
+- helpDetails
+- volunteerOpenings
+- category
+- status
+
+IMPORTANT:
+- Some NGOs must request help.
+- Some NGOs must offer help for a project.
+- Balance the list so both types are represented.
+- Show this clearly in the UI using badges such as “Requests Help” and “Offers Help”.
+- Add filters so users can filter NGOs by:
+  - Requests Help
+  - Offers Help
+  - SDG category
+  - Search by NGO name / project
+
+USE THIS NGO DATA:
+
+1. Anandam NGO
+Project: Free Old Age Home & Care
+Description: Provides shelter, food, clothing, and medical support for abandoned senior citizens. Focuses on emotional well-being and dignity.
+Impact: Reduces elderly homelessness and improves quality of life.
+
+2. Seyall NGO
+Project: Women Skill Development Program
+Description: Trains women in tailoring, handicrafts, and entrepreneurship skills. Helps them become financially independent.
+Impact: Women empowerment and improved family income.
+
+3. Otrumai NGO
+Project: Community Support & Food Drives
+Description: Organizes food distribution and social service activities. Encourages youth volunteers.
+Impact: Hunger relief and stronger community unity.
+
+4. Panchayat Learning Center NGO
+Project: Rural Learning Centers
+Description: Provides after-school education, basic literacy, and mentorship in villages.
+Impact: Reduces school dropouts and improves education access.
+
+5. Thuvakkam NGO
+Project: Blue Zone – Water Body Restoration
+Description: Restores lakes and ponds, promotes rainwater conservation.
+Impact: Improves groundwater levels and environmental sustainability.
+
+6. Little Heart NGO
+Project: Child Welfare & Education Support
+Description: Provides food, school supplies, and healthcare for underprivileged children.
+Impact: Better education access and child development.
+
+7. Mohan Vision NGO
+Project: Free Eye Care Camps
+Description: Conducts eye checkups, provides glasses, and supports surgeries.
+Impact: Prevents blindness and improves vision health.
+
+8. Golden Heart NGO
+Project: Hunger Relief Program
+Description: Distributes meals to homeless and low-income people.
+Impact: Reduces hunger and supports daily survival.
+
+9. Agaram Foundation
+Project: Higher Education Support Program
+Description: Provides scholarships, mentoring, and career guidance for rural students.
+Impact: Increases access to higher education and career opportunities.
+
+10. Tankers Foundation
+Project: Clean Water Supply Initiative
+Description: Supplies drinking water to water-scarce areas.
+Impact: Improves health and solves water shortages.
+
+11. Aaram Foundation
+Project: Women Empowerment Initiative
+Description: Provides livelihood training and employment opportunities.
+Impact: Economic independence for women.
+
+12. Eco Societies India NGO
+Project: Environmental Awareness Programs
+Description: Conducts tree planting, waste management, and eco-awareness campaigns.
+Impact: Promotes sustainability and environmental protection.
+
+13. Vidhigal NGO
+Project: Child Rights & Legal Awareness
+Description: Conducts awareness programs on child safety and legal rights.
+Impact: Protects children and increases legal awareness.
+
+14. Bhumi NGO
+Project: Ignite Education Program
+Description: Volunteers teach underprivileged children academics and life skills.
+Impact: Improves education quality and student confidence.
+
+ASSIGN HELP TYPES INTELLIGENTLY:
+- Requests Help examples: Anandam NGO, Otrumai NGO, Thuvakkam NGO, Little Heart NGO, Golden Heart NGO, Tankers Foundation, Bhumi NGO
+- Offers Help examples: Seyall NGO, Panchayat Learning Center NGO, Mohan Vision NGO, Agaram Foundation, Aaram Foundation, Eco Societies India NGO, Vidhigal NGO
+- For “requests_help”, define specific needs such as volunteers, donations, teaching support, medical camp support, water distribution support, food drive coordination, lake cleanup volunteers, etc.
+- For “offers_help”, define what they can offer, such as training support, educational mentorship, eye camps, awareness sessions, scholarships, legal awareness workshops, environmental campaign partnerships, or women livelihood training.
+
+SDG TAG MAPPING:
+Assign relevant SDG tags to each NGO/project such as:
+- SDG 1 No Poverty
+- SDG 2 Zero Hunger
+- SDG 3 Good Health and Well-being
+- SDG 4 Quality Education
+- SDG 5 Gender Equality
+- SDG 6 Clean Water and Sanitation
+- SDG 10 Reduced Inequalities
+- SDG 11 Sustainable Cities and Communities
+- SDG 13 Climate Action
+- SDG 17 Partnerships for the Goals
+
+UI / UX UPGRADES:
+- Add a dedicated NGO directory page with cards.
+- Each NGO card should show:
+  - NGO name
+  - Project name
+  - Description
+  - Impact
+  - SDG tags
+  - Help type badge
+  - Help details
+  - Volunteer openings
+  - CTA button (Volunteer / View Project / Request Collaboration)
+- Add filters and search.
+- Add a project details page or modal.
+- Add a volunteer dashboard section where a user can:
+  - view applied projects
+  - mark volunteering completed
+  - view and download certificate
+- Add empty states and mock success alerts.
+- Keep it polished enough for a college demo.
+
+DATA STRUCTURE REQUIREMENT:
+Create a reusable mock data file/object for NGOs, volunteer applications, certificates, and translations.
+Suggested structure:
+- ngos[]
+- volunteerApplications[]
+- certificates[]
+- translations.en
+- translations.ta
+- translations.hi
+
+CERTIFICATE TEXT REQUIREMENT:
+Use wording similar to:
+“This certificate is proudly presented to [Volunteer Name] for successfully completing the volunteering service for [Project Name] under [NGO Name] from [Start Date] to [End Date]. We appreciate their valuable contribution and commitment toward social impact.”
+
+Translate this certificate text into Tamil and Hindi too.
+
+DELIVERABLE:
+- Implement the feature changes directly into the project.
+- Preserve current styling where possible, but improve the UI if needed.
+- Ensure the app runs without backend dependency.
+- Ensure the demo flow works end-to-end:
+  1. choose language
+  2. browse NGOs
+  3. apply to volunteer
+  4. go to project/dashboard
+  5. click Completed Volunteering
+  6. generate/download certificate with volunteer name and dates
+- Add comments only where necessary.
+- Make the code clean and easy for a college project presentation.
