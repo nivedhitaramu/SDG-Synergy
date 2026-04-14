@@ -1,0 +1,162 @@
+Fix and upgrade the volunteer certificate system in my SDG Synergy prototype.
+
+CURRENT PROBLEM:
+Right now, the volunteering certificate is being generated only for the NGO list that I manually added. That is not enough.
+
+EXPECTED BEHAVIOR:
+The volunteering certificate feature must work for:
+1. NGO directory items that allow volunteering
+2. Projects shown in the Projects Dashboard
+3. Any project that requires help and has a volunteer/help submission form
+4. Any completed volunteering/help submission where the project owner marks the contribution as completed
+
+IMPORTANT RULE:
+Do not tie certificate generation only to the NGO master list.
+Instead, tie certificate generation to the submission/completion workflow.
+
+NEW LOGIC TO IMPLEMENT:
+- Any project that has a “requires help” or “volunteer needed” flow should collect volunteer/help form data.
+- When a user applies through that project form, save the submitted details in the common submissions data model.
+- If that submission is volunteering-related and gets marked as completed, the app should generate a certificate from that submission record.
+- This must work whether the project came from:
+  - NGO directory
+  - project dashboard
+  - dynamic project cards
+  - future added projects
+
+CERTIFICATE ELIGIBILITY LOGIC:
+Create a reusable logic such as:
+certificateEligible = true when:
+- submissionType is volunteer / volunteering / field support / teaching support / event support / awareness campaign volunteer / cleanup volunteer / project execution support
+AND
+- status is completed
+AND
+- applicant name + project name + NGO name + start/end dates exist
+
+If those conditions are satisfied, show:
+- View Certificate
+- Download Certificate
+
+If not, do not show certificate actions.
+
+ARCHITECTURE CHANGE:
+Refactor certificate generation so it uses a shared data source like:
+- helpSubmissions[]
+or
+- applications[]
+and not a hardcoded NGO list.
+
+Every certificate should be generated from the selected submission record.
+
+REQUIRED DATA TO STORE FOR PROJECTS THAT REQUIRE HELP:
+For all projects where users can volunteer or support execution, collect and save:
+- applicant full name
+- email
+- phone number
+- ngo name
+- project name
+- project id
+- submission type
+- help category
+- start date
+- end date
+- duration or availability
+- skills/interests
+- message/reason
+- status
+- submittedAt
+- completedAt
+- certificateEligible
+
+PROJECTS DASHBOARD REQUIREMENT:
+In the Projects Dashboard, for projects that require help:
+- Add a clear CTA like:
+  - Volunteer
+  - Offer Help
+  - Join Project
+- Open the relevant submission form
+- On submit, create a dashboard submission record
+- Once completed, enable certificate generation from the project dashboard too
+
+VOLUNTEER DASHBOARD REQUIREMENT:
+In the volunteer/user dashboard:
+- Show all submitted applications across NGO directory and projects dashboard
+- If a volunteering/help record is marked completed and certificateEligible is true, show certificate actions there too
+- This section should not depend on whether the project was in the static NGO list
+
+ADMIN / NGO OWNER FLOW:
+In the NGO/project owner dashboard:
+- Show incoming submissions from all project sources
+- Allow marking relevant volunteering submissions as completed
+- When marked completed, automatically enable certificate generation for that record
+- Keep completed records visible
+
+CERTIFICATE TEMPLATE:
+Use one reusable certificate component/template for all eligible volunteering submissions.
+Certificate should include:
+- volunteer full name
+- ngo name
+- project name
+- start date
+- end date
+- volunteering duration
+- issue date
+- unique certificate ID
+- completion message
+
+Use wording like:
+“This certificate is proudly presented to [Volunteer Name] for successfully completing the volunteering/service contribution for [Project Name] under [NGO Name] from [Start Date] to [End Date]. We appreciate their valuable contribution toward social impact.”
+
+MULTILINGUAL SUPPORT:
+Ensure certificate actions and certificate text work in:
+- English
+- Tamil
+- Hindi
+Translate:
+- Completed Volunteering
+- View Certificate
+- Download Certificate
+- Certificate ID
+- Issued On
+- Successfully completed
+and the full certificate sentence.
+
+UI / UX CHANGES:
+- On every project card that needs help, show whether certificate is available after completion
+- Add a small badge like:
+  - Certificate Eligible
+  - Completion Certificate Available
+- In the completed submissions history, visually group records that have downloadable certificates
+
+DATA MODEL IMPROVEMENT:
+Use a normalized project-level model such as:
+projects[]
+helpSubmissions[]
+certificates[]
+
+Each project should support fields like:
+- needsHelp: true/false
+- helpModes: [volunteer, donation, teaching, medical, campaign, logistics, cleanup, mentoring]
+- certificateSupportedModes: [volunteer, teaching, campaign, cleanup, field support]
+- ownerNgoId
+- ownerNgoName
+
+CREATIVE IMPROVEMENT:
+Do not restrict certificates only to the exact submissionType value “volunteer”.
+Allow certificate generation for meaningful contribution-based help categories too, such as:
+- teaching support
+- awareness campaign support
+- environmental cleanup participation
+- event volunteering
+- field coordination support
+but only when marked completed.
+
+TEST / DEMO REQUIREMENT:
+Preload some demo project submissions where:
+- one certificate comes from NGO list data
+- one certificate comes from a project dashboard help-required project
+- one certificate comes from a teaching support submission
+- one incomplete submission does not show certificate actions
+
+DELIVERABLE:
+Please inspect the current project structure and refactor the app so the certificate feature becomes submission-based and project-based, not NGO-list-based. Make sure all projects requiring help can collect the required details and generate certificates after completion.

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { SDGBadge } from "./sdg-badge";
 import { HelpOfferDialog } from "./help-offer-dialog";
 import type { Project } from "@shared/schema";
-import { Users, LogIn, HandHeart, Wrench, DollarSign, GraduationCap, UserCheck, Megaphone, Scale } from "lucide-react";
+import { Users, LogIn, HandHeart, Wrench, DollarSign, GraduationCap, UserCheck, Megaphone, Scale, Award } from "lucide-react";
 import { useJoinProject } from "@/hooks/use-api";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -96,6 +96,11 @@ export function ProjectCard({ project }: { project: Project }) {
                     );
                   })}
                 </div>
+                {helpTypes.includes("Volunteers") && (
+                  <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                    <Award className="w-3 h-3" /> Certificate Eligible
+                  </div>
+                )}
                 {!isOwner && (
                   <p className="text-xs text-muted-foreground mt-1.5">Tap a tag to offer that specific help</p>
                 )}

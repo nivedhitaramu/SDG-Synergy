@@ -12,9 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import {
   getSubmissions, getNotifications, updateSubmissionStatus, markNotificationRead,
   markAllNotificationsRead, HelpSubmission, AppNotification,
-  SUBMISSION_TYPE_LABELS, STATUS_COLORS, SubmissionStatus
+  SUBMISSION_TYPE_LABELS, STATUS_COLORS, SubmissionStatus,
+  getCertificateForSubmission, isCertificateEligible, generateCertificateFromSubmission, SubmissionCertificate
 } from "@/lib/help-submissions";
-import { markCompleted, getCertificateForApplication } from "@/lib/volunteer-store";
 import { formatDistanceToNow, format } from "date-fns";
 import {
   Users, Inbox, CheckCircle2, Clock, Bell, BellOff, Search, Filter,
@@ -135,19 +135,14 @@ function SubmissionDetailModal({
 
   if (!sub) return null;
 
-  const cert = sub.volunteerApplicationId ? getCertificateForApplication(sub.volunteerApplicationId) : undefined;
+  const cert = getCertificateForSubmission(sub.id);
 
   function handleStatusChange(status: SubmissionStatus) {
     if (!sub) return;
     setUpdatingStatus(true);
-    updateSubmissionStatus(sub.id, status);
-    if (status === "completed" && sub.certificateEligible && sub.volunteerApplicationId && !cert) {
-      try {
-        markCompleted(sub.volunteerApplicationId);
-        toast({ title: "Marked Completed", description: "Certificate has been generated for this volunteer." });
-      } catch {
-        toast({ title: "Marked Completed", description: "Status updated." });
-      }
+    const generatedCert = updateSubmissionStatus(sub.id, status);
+    if (status === "completed" && isCertificateEligible(sub)) {
+      toast({ title: "Marked Completed", description: generatedCert ? "Certificate generated! Volunteer can view it in their hub." : "Status updated." });
     } else {
       toast({ title: "Status Updated", description: `Submission marked as ${status}.` });
     }

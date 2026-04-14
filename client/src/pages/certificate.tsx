@@ -2,33 +2,47 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useRoute, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Certificate } from "@/lib/volunteer-store";
+import { getCertificateByCertId, SubmissionCertificate } from "@/lib/help-submissions";
 import { ArrowLeft, Printer } from "lucide-react";
 
-function getCertificateByCertId(certId: string): Certificate | undefined {
+function getAnyCertificate(certId: string): SubmissionCertificate | undefined {
+  // Check submission certs (covers NGO directory, project dashboard, and all sources)
+  const fromSubmissions = getCertificateByCertId(certId);
+  if (fromSubmissions) return fromSubmissions;
+
+  // Backward compat: check old volunteer-store certs and reshape
   try {
-    const certs: Certificate[] = JSON.parse(localStorage.getItem("sdg_certificates") || "[]");
-    return certs.find(c => c.certId === certId);
-  } catch {
-    return undefined;
-  }
+    const oldCerts: any[] = JSON.parse(localStorage.getItem("sdg_certificates") || "[]");
+    const old = oldCerts.find((c: any) => c.certId === certId);
+    if (old) {
+      return {
+        certId: old.certId,
+        submissionId: old.applicationId || "",
+        volunteerName: old.volunteerName,
+        projectName: old.projectName,
+        ngoName: old.ngoName,
+        startDate: old.startDate,
+        endDate: old.endDate,
+        issueDate: old.issueDate,
+      };
+    }
+  } catch { /* ignore */ }
+
+  return undefined;
 }
 
 export default function CertificatePage() {
   const { t } = useTranslation();
   const [, params] = useRoute("/certificate/:certId");
   const [, setLocation] = useLocation();
-  const [cert, setCert] = useState<Certificate | null>(null);
+  const [cert, setCert] = useState<SubmissionCertificate | null>(null);
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     if (params?.certId) {
-      const found = getCertificateByCertId(params.certId);
-      if (found) {
-        setCert(found);
-      } else {
-        setNotFound(true);
-      }
+      const found = getAnyCertificate(params.certId);
+      if (found) setCert(found);
+      else setNotFound(true);
     }
   }, [params?.certId]);
 
@@ -52,7 +66,7 @@ export default function CertificatePage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-amber-50 dark:from-green-950/30 dark:via-background dark:to-amber-950/20 p-6">
       <div className="max-w-3xl mx-auto">
-        {/* Print controls — hidden when printing */}
+        {/* Controls */}
         <div className="flex gap-3 mb-6 print:hidden">
           <Button variant="outline" onClick={() => setLocation("/volunteer-hub")}>
             <ArrowLeft className="w-4 h-4 mr-2" /> {t("certificate.back")}
@@ -65,19 +79,20 @@ export default function CertificatePage() {
         {/* Certificate */}
         <div id="certificate-content"
           className="bg-white dark:bg-card border-4 border-double border-amber-400 dark:border-amber-600 rounded-3xl shadow-2xl p-12 text-center relative overflow-hidden">
-          {/* Decorative corner elements */}
+          {/* Decorative corners */}
           <div className="absolute top-0 left-0 w-24 h-24 bg-gradient-to-br from-green-400/20 to-transparent rounded-tl-3xl" />
           <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-amber-400/20 to-transparent rounded-tr-3xl" />
           <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-amber-400/20 to-transparent rounded-bl-3xl" />
           <div className="absolute bottom-0 right-0 w-24 h-24 bg-gradient-to-tl from-green-400/20 to-transparent rounded-br-3xl" />
 
-          {/* Header */}
           <div className="relative z-10 space-y-6">
+            {/* Brand */}
             <div className="flex items-center justify-center gap-3 mb-2">
               <span className="text-4xl">🌿</span>
               <span className="font-display font-black text-3xl text-green-700 dark:text-green-400 tracking-tight">SDG Synergy</span>
             </div>
 
+            {/* Title */}
             <div>
               <h1 className="text-4xl font-display font-black text-gray-800 dark:text-white tracking-tight">
                 {t("certificate.title")}
@@ -89,6 +104,7 @@ export default function CertificatePage() {
               </div>
             </div>
 
+            {/* Recipient */}
             <div className="py-4">
               <p className="text-gray-500 dark:text-gray-400 text-lg">{t("certificate.presentedTo")}</p>
               <p className="text-5xl font-display font-black text-gray-900 dark:text-white mt-2 leading-tight">
@@ -96,6 +112,7 @@ export default function CertificatePage() {
               </p>
             </div>
 
+            {/* Body text */}
             <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-2xl p-6 text-gray-700 dark:text-gray-300 leading-relaxed text-lg max-w-lg mx-auto">
               <p>
                 {t("certificate.body")}{" "}
@@ -107,12 +124,10 @@ export default function CertificatePage() {
                 {t("certificate.to")}{" "}
                 <strong className="text-gray-900 dark:text-white">{cert.endDate}</strong>.
               </p>
-              <p className="mt-3 text-base text-gray-500 dark:text-gray-400">
-                {t("certificate.body2")}
-              </p>
+              <p className="mt-3 text-base text-gray-500 dark:text-gray-400">{t("certificate.body2")}</p>
             </div>
 
-            {/* Footer details */}
+            {/* Footer info */}
             <div className="grid grid-cols-2 gap-6 mt-6">
               <div className="border-t-2 border-amber-300 pt-4">
                 <p className="text-xs text-gray-400 uppercase tracking-widest font-semibold mb-1">{t("certificate.issueDate")}</p>
@@ -124,13 +139,14 @@ export default function CertificatePage() {
               </div>
             </div>
 
+            {/* Issued by */}
             <div className="border-t border-amber-200 dark:border-amber-800 mt-6 pt-6 flex items-center justify-center gap-2">
               <span className="text-xl">🌿</span>
               <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{t("certificate.issuedBy")}</p>
               <span className="text-xl">🌿</span>
             </div>
 
-            {/* SDG Wheel decoration */}
+            {/* SDG colour strip */}
             <div className="flex justify-center gap-1.5 mt-2">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17].map(n => (
                 <div key={n} className="w-2 h-2 rounded-full opacity-60"
