@@ -14,6 +14,7 @@ import {
   HandHeart,
   ShieldCheck,
   Languages,
+  Inbox,
 } from "lucide-react";
 import {
   Sidebar,
@@ -62,6 +63,7 @@ export function AppSidebar() {
     { title: t("nav.events"), url: "/events", icon: CalendarDays },
     { title: t("nav.ngos"), url: "/ngos", icon: Building2 },
     { title: t("nav.volunteerDashboard"), url: "/volunteer-hub", icon: HandHeart },
+    { title: t("nav.submissions"), url: "/submissions", icon: Inbox },
     { title: t("nav.profile"), url: "/profile", icon: UserCircle },
     { title: t("nav.sdgs"), url: "/sdgs", icon: Globe },
   ];

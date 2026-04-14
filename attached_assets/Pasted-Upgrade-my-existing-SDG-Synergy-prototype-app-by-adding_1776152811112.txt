@@ -1,0 +1,237 @@
+Upgrade my existing SDG Synergy prototype app by adding an in-app dashboard system for all incoming help submissions. Right now the app sends or simulates an email when someone offers help or volunteers. I also want all those submissions to appear inside the dashboard with the contact details that the user entered in the form.
+
+IMPORTANT CONTEXT:
+- This is a college project prototype.
+- Use mock/demo data only.
+- No real backend is required unless the existing app already has one.
+- If no backend is available, store submissions in local state, context, mock JSON, or browser-safe in-memory state.
+- Keep current UI and features working.
+- This feature must work not only for volunteering, but for every kind of help option in the app.
+
+GOAL:
+Whenever any user submits any “offer help” / “volunteer” / “request collaboration” / other help-related form, the NGO/project owner should be able to see that submission inside their dashboard in a structured way, in addition to the existing email notification flow.
+
+FEATURE TO ADD:
+Create a dashboard section called one of the following:
+- “Incoming Help Requests”
+- “Help Submissions”
+- “Applications & Offers”
+Use whichever fits the current app style best.
+
+WHAT SHOULD HAPPEN ON FORM SUBMISSION:
+- Keep the current email notification or simulated email behavior.
+- Also create a dashboard entry for that submission.
+- The dashboard entry should immediately appear in the relevant NGO/project owner dashboard.
+- Show a success message confirming both:
+  1. request submitted successfully
+  2. NGO/project owner can view it in dashboard
+
+SUBMISSION TYPES TO SUPPORT:
+Support all major help flows in the app, including:
+- Volunteer application
+- Offer help
+- Request collaboration
+- Donation/support offer
+- Teaching support
+- Medical support
+- Food drive support
+- Water support
+- Awareness / campaign partnership
+- Any future help form types
+
+CREATE A COMMON DATA MODEL:
+Create a reusable data structure for all help submissions.
+
+Suggested structure for helpSubmissions[]:
+- id
+- submissionType
+- projectId
+- projectName
+- ngoId
+- ngoName
+- applicantName
+- applicantEmail
+- applicantPhone
+- organizationName (optional)
+- message / reason
+- skillsOffered
+- availability
+- preferredStartDate
+- preferredEndDate
+- helpCategory
+- status (new, reviewed, contacted, approved, rejected, completed)
+- submittedAt
+- sourceForm
+- notes (for NGO/project owner)
+- certificateEligible (true/false only for volunteering related forms)
+
+FORM FIELD REQUIREMENT:
+For every help-related form, make sure the following fields are captured and saved into the dashboard entry:
+- Full name
+- Email
+- Phone number
+- Project name
+- NGO name
+- Type of help
+- Message / reason for applying
+- Availability / dates if applicable
+- Skills / support offered if applicable
+
+DASHBOARD UI REQUIREMENTS:
+Add a dashboard page or dashboard section for NGO/project owners with:
+- Summary cards:
+  - Total submissions
+  - New submissions
+  - Volunteer applications
+  - Offer help submissions
+  - Completed volunteer records
+- A searchable and filterable submissions table/list
+- Filters by:
+  - submission type
+  - NGO
+  - project
+  - status
+  - date
+- Each dashboard item must display:
+  - Applicant name
+  - Phone number
+  - Email
+  - Submission type
+  - NGO name
+  - Project name
+  - Submitted date
+  - Status badge
+
+ADD DETAILS VIEW:
+When clicking a submission, open a details panel / modal / drawer that shows:
+- Applicant full name
+- Email
+- Phone number
+- Organization name if provided
+- Type of help
+- Project / NGO
+- Submitted message
+- Skills offered
+- Availability
+- Start/end dates if available
+- Internal notes section
+- Status update controls
+
+STATUS WORKFLOW:
+Allow NGO/project owner to update submission status:
+- New
+- Reviewed
+- Contacted
+- Approved
+- Rejected
+- Completed
+Use colored badges for these statuses.
+
+CONTACT ACTIONS:
+In each dashboard item or detail view, add quick actions:
+- Email applicant
+- Call applicant
+- Copy contact details
+- Mark as contacted
+- Approve / Reject
+If direct call/email is not possible in the environment, use:
+- mailto links for email
+- tel links for phone
+
+NOTIFICATION CENTER:
+Also add a lightweight notification center in the dashboard.
+Examples:
+- “New volunteer application received for Ignite Education Program”
+- “New help offer received for Blue Zone – Water Body Restoration”
+- “A new collaboration request has been submitted”
+Mark notifications as read/unread.
+
+RELATION TO CERTIFICATE FEATURE:
+- For volunteer submissions, once marked completed, it should remain visible in the dashboard.
+- Completed volunteer records should still show applicant contact details.
+- The existing certificate generation feature should continue to work from these records.
+- Add a button from the completed submission row like:
+  - “View Certificate”
+  - “Download Certificate”
+- Only show certificate actions for volunteering-related submissions.
+
+MULTILINGUAL SUPPORT:
+Since the app already supports English, Tamil, and Hindi, translate the new dashboard UI too:
+- Incoming Help Requests
+- Applicant Name
+- Phone Number
+- Email
+- Submission Type
+- Status
+- View Details
+- Notes
+- Approve
+- Reject
+- Mark Completed
+- Notifications
+- New Submission
+- Volunteer Application
+- Offer Help
+- Contacted
+- Reviewed
+Also translate empty states and success messages.
+
+DEMO DATA REQUIREMENT:
+Preload the dashboard with some realistic mock submissions so the feature is visible during demo even before new form submissions happen.
+Include examples for:
+- Volunteer application for Bhumi NGO
+- Water support offer for Tankers Foundation
+- Collaboration request for Eco Societies India NGO
+- Teaching support for Panchayat Learning Center NGO
+- Food drive support for Otrumai NGO
+
+ROLE / ACCESS LOGIC:
+- If the current user is an NGO/project owner, show the submissions dashboard.
+- If the current user is a volunteer/helper, show their submitted applications history instead.
+- For prototype purposes, role logic can be mock-based.
+
+HELPER HISTORY VIEW:
+For users who submitted forms, add a small section:
+- “My Applications”
+Show:
+- project name
+- NGO
+- type of help
+- dates
+- status
+- certificate availability if volunteering is completed
+
+EMAIL + DASHBOARD LOGIC:
+Wherever email notification code exists, do not remove it.
+Instead, extend the same submission action so that:
+1. email notification is triggered/simulated
+2. dashboard submission record is created
+3. notification center is updated
+4. applicant history is updated
+
+COMPONENT / FILE STRUCTURE SUGGESTION:
+Create reusable files or modules if the project structure supports it:
+- mock/helpSubmissions.js or data/helpSubmissions.ts
+- dashboard/HelpSubmissionsTable
+- dashboard/SubmissionDetailModal
+- dashboard/NotificationCenter
+- utils/submissionHelpers
+- translation keys for dashboard labels
+
+UI QUALITY:
+- Keep design consistent with the existing SDG Synergy app.
+- Use badges, cards, and clean table layouts.
+- Make mobile responsive.
+- On mobile, stack submission cards instead of cramped tables if needed.
+- Add empty states like “No submissions yet”.
+- Add success/error toast messages where relevant.
+
+DELIVERABLE:
+Implement this inside the current project so that:
+1. a user submits any help-related form
+2. email notification is triggered/simulated
+3. the submission appears in the dashboard with name, number, and email
+4. NGO/project owner can review and manage it
+5. volunteer completions still support certificate generation
+
+Please first inspect the existing project structure, identify the current help form flow, and then integrate this feature without breaking the current volunteer and NGO pages.

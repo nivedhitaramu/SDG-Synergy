@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { NGO_DATA, NGO } from "@/lib/ngo-data";
 import { SDG_DATA } from "@/lib/sdgs";
 import { saveApplication, hasApplied, generateApplicationId, VolunteerApplication } from "@/lib/volunteer-store";
+import { addSubmissionFromVolunteer } from "@/lib/help-submissions";
 import { useToast } from "@/hooks/use-toast";
 import { Search, HandHeart, Building2, MapPin, Users, CheckCircle2, AlertCircle } from "lucide-react";
 import { useLocation } from "wouter";
@@ -66,6 +67,7 @@ function VolunteerFormModal({ ngo, open, onClose }: { ngo: NGO | null; open: boo
       status: "pending",
     };
     saveApplication(app);
+    addSubmissionFromVolunteer(app);
     setSubmitted(true);
     toast({ title: t("volunteerForm.successTitle"), description: t("volunteerForm.successDesc", { project: ngo.projectName, ngo: ngo.ngoName }) });
   }

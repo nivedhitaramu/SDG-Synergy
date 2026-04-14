@@ -22,6 +22,7 @@ import AdminPage from "@/pages/admin";
 import NGOsPage from "@/pages/ngos";
 import VolunteerHubPage from "@/pages/volunteer-hub";
 import CertificatePage from "@/pages/certificate";
+import SubmissionsPage from "@/pages/submissions";
 import { useEffect } from "react";
 
 function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
@@ -81,6 +82,9 @@ function Router() {
         <ProtectedRoute component={VolunteerHubPage} />
       </Route>
       <Route path="/certificate/:certId" component={CertificatePage} />
+      <Route path="/submissions">
+        <ProtectedRoute component={SubmissionsPage} />
+      </Route>
       <Route path="/admin">
         <ProtectedRoute component={AdminPage} />
       </Route>
