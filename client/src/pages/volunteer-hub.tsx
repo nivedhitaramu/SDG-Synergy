@@ -46,13 +46,37 @@ type AllCert = {
   source: "submission" | "legacy";
 };
 
+function certBelongsToUser(cert: any, userId: number, allSubs: any[]): boolean {
+  // If the cert itself has a userId, use it directly
+  if (cert.userId !== undefined) return cert.userId === userId;
+  // Demo certs (no userId, no real submissionId) — exclude for all real users
+  if (!cert.submissionId && !cert.applicationId) return false;
+  // For submission-based certs: check linked submission's userId
+  if (cert.submissionId) {
+    const sub = allSubs.find((s: any) => s.id === cert.submissionId);
+    if (sub) return sub.userId === userId;
+    return false;
+  }
+  // For legacy certs: check linked submission by volunteerApplicationId
+  if (cert.applicationId) {
+    const sub = allSubs.find((s: any) => s.volunteerApplicationId === cert.applicationId);
+    if (sub) return sub.userId === userId;
+    return false;
+  }
+  return false;
+}
+
 function getAllCertificates(userId?: number): AllCert[] {
+  if (!userId) return [];
+  let allSubs: any[] = [];
+  try { allSubs = JSON.parse(localStorage.getItem("sdg_help_submissions") || "[]"); } catch { /* ignore */ }
+
   const certs: AllCert[] = [];
   // New submission-based certs
   try {
-    const subCerts: SubmissionCertificate[] = JSON.parse(localStorage.getItem("sdg_submission_certs") || "[]");
+    const subCerts: any[] = JSON.parse(localStorage.getItem("sdg_submission_certs") || "[]");
     for (const c of subCerts) {
-      if (userId !== undefined && c.userId !== userId) continue;
+      if (!certBelongsToUser(c, userId, allSubs)) continue;
       certs.push({ certId: c.certId, volunteerName: c.volunteerName, projectName: c.projectName, ngoName: c.ngoName, startDate: c.startDate, endDate: c.endDate, issueDate: c.issueDate, source: "submission" });
     }
   } catch { /* ignore */ }
@@ -60,7 +84,7 @@ function getAllCertificates(userId?: number): AllCert[] {
   try {
     const legacyCerts: any[] = JSON.parse(localStorage.getItem("sdg_certificates") || "[]");
     for (const c of legacyCerts) {
-      if (userId !== undefined && c.userId !== userId) continue;
+      if (!certBelongsToUser(c, userId, allSubs)) continue;
       if (!certs.find(x => x.certId === c.certId)) {
         certs.push({ certId: c.certId, volunteerName: c.volunteerName, projectName: c.projectName, ngoName: c.ngoName, startDate: c.startDate, endDate: c.endDate, issueDate: c.issueDate, source: "legacy" });
       }

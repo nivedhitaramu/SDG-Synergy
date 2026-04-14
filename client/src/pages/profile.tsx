@@ -27,15 +27,32 @@ const INDIA_CITIES = [
 
 type ProfileCert = { certId: string; volunteerName: string; projectName: string; ngoName: string; startDate: string; endDate: string; issueDate: string };
 
+function certOwned(cert: any, userId: number, allSubs: any[]): boolean {
+  if (cert.userId !== undefined) return cert.userId === userId;
+  if (!cert.submissionId && !cert.applicationId) return false;
+  if (cert.submissionId) {
+    const s = allSubs.find((x: any) => x.id === cert.submissionId);
+    return s ? s.userId === userId : false;
+  }
+  if (cert.applicationId) {
+    const s = allSubs.find((x: any) => x.volunteerApplicationId === cert.applicationId);
+    return s ? s.userId === userId : false;
+  }
+  return false;
+}
+
 function getAllProfileCerts(userId: number): ProfileCert[] {
+  let allSubs: any[] = [];
+  try { allSubs = JSON.parse(localStorage.getItem("sdg_help_submissions") || "[]"); } catch { /* ignore */ }
+
   const certs: ProfileCert[] = [];
   try {
     const sub: any[] = JSON.parse(localStorage.getItem("sdg_submission_certs") || "[]");
-    for (const c of sub) if (c.userId === userId) certs.push(c);
+    for (const c of sub) if (certOwned(c, userId, allSubs)) certs.push(c);
   } catch { /* ignore */ }
   try {
     const legacy: any[] = JSON.parse(localStorage.getItem("sdg_certificates") || "[]");
-    for (const c of legacy) if (c.userId === userId && !certs.find(x => x.certId === c.certId)) certs.push(c);
+    for (const c of legacy) if (certOwned(c, userId, allSubs) && !certs.find(x => x.certId === c.certId)) certs.push(c);
   } catch { /* ignore */ }
   return certs;
 }
