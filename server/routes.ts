@@ -459,6 +459,23 @@ export async function registerRoutes(
     }
   });
 
+  // TEMPORARY admin user-delete route — remove after use
+  app.get("/api/admin/purge-test-users", async (req, res) => {
+    if (req.query.secret !== "sdg_purge_2026") {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const emails = ["nivithecoolkid@gmail.com", "sec24cs121@sairamtap.edu.in", "nivedhitaramu@gmail.com"];
+    const deleted: string[] = [];
+    for (const email of emails) {
+      const user = await storage.getUserByEmail(email);
+      if (user) {
+        await storage.deleteUser(user.id);
+        deleted.push(`${user.name} (${email})`);
+      }
+    }
+    res.json({ message: "Done", deleted });
+  });
+
   // Projects routes
   app.get(api.projects.list.path, async (req, res) => {
     const projects = await storage.getAllProjects();

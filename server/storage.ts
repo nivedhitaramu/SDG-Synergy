@@ -9,6 +9,7 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   verifyEmail(userId: number): Promise<User>;
   updateProfile(userId: number, updates: any): Promise<User>;
+  deleteUser(id: number): Promise<void>;
 
   createProject(project: InsertProject): Promise<Project>;
   getProject(id: number): Promise<Project | undefined>;
@@ -62,6 +63,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId))
       .returning();
     return user;
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   async createProject(project: InsertProject): Promise<Project> {
