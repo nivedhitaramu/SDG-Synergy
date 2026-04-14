@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/layout";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Building2, MapPin, Mail, Calendar, Edit2, Trophy } from "lucide-react";
+import { Building2, MapPin, Mail, Calendar, Edit2, Trophy, Award, FileText } from "lucide-react";
+import { useLocation } from "wouter";
 import { BadgesSection } from "@/components/shared/badges-section";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
@@ -24,10 +25,27 @@ const INDIA_CITIES = [
   "Thiruvananthapuram", "Vadodara", "Visakhapatnam", "Vizag"
 ];
 
+type ProfileCert = { certId: string; volunteerName: string; projectName: string; ngoName: string; startDate: string; endDate: string; issueDate: string };
+
+function getAllProfileCerts(): ProfileCert[] {
+  const certs: ProfileCert[] = [];
+  try {
+    const sub: any[] = JSON.parse(localStorage.getItem("sdg_submission_certs") || "[]");
+    certs.push(...sub);
+  } catch { /* ignore */ }
+  try {
+    const legacy: any[] = JSON.parse(localStorage.getItem("sdg_certificates") || "[]");
+    for (const c of legacy) if (!certs.find(x => x.certId === c.certId)) certs.push(c);
+  } catch { /* ignore */ }
+  return certs;
+}
+
 export default function ProfilePage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [isEditing, setIsEditing] = useState(false);
+  const [profileCerts, setProfileCerts] = useState<ProfileCert[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [filteredCities, setFilteredCities] = useState<string[]>([]);
   const [selectedSDGs, setSelectedSDGs] = useState<number[]>(user?.sdgs || []);
@@ -38,6 +56,8 @@ export default function ProfilePage() {
     orgType: user?.orgType || "",
     sdgs: user?.sdgs || [],
   });
+
+  useEffect(() => { setProfileCerts(getAllProfileCerts()); }, []);
 
   if (!user) return null;
 
@@ -252,6 +272,64 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent>
             <BadgesSection userId={user.id} />
+          </CardContent>
+        </Card>
+
+        {/* Certificates Section */}
+        <Card className="border-amber-200 dark:border-amber-800 shadow-md bg-gradient-to-br from-amber-50/40 to-background dark:from-amber-950/10">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="font-display flex items-center gap-2">
+                <Award className="w-5 h-5 text-amber-600" />
+                Certificates of Appreciation
+                {profileCerts.length > 0 && (
+                  <span className="ml-1 bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 text-xs font-bold px-2 py-0.5 rounded-full">
+                    {profileCerts.length}
+                  </span>
+                )}
+              </CardTitle>
+              <Button size="sm" variant="outline" onClick={() => setLocation("/volunteer-hub")} className="text-xs">
+                <FileText className="w-3.5 h-3.5 mr-1" /> View All
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {profileCerts.length === 0 ? (
+              <div className="text-center py-8 border-2 border-dashed border-amber-200 dark:border-amber-800 rounded-xl">
+                <Award className="w-10 h-10 text-amber-400/40 mx-auto mb-3" />
+                <p className="text-muted-foreground text-sm font-medium">No certificates yet</p>
+                <p className="text-muted-foreground text-xs mt-1 max-w-xs mx-auto">
+                  Complete a volunteering or project contribution to earn your first certificate.
+                </p>
+                <Button size="sm" className="mt-4 bg-amber-600 hover:bg-amber-700 text-white" onClick={() => setLocation("/ngos")}>
+                  Find NGOs to Volunteer With
+                </Button>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-4">
+                {profileCerts.map(cert => (
+                  <div key={cert.certId} className="border border-amber-200 dark:border-amber-800 rounded-xl p-4 bg-white dark:bg-card flex gap-3 items-start hover:shadow-md transition-shadow">
+                    <div className="bg-amber-100 dark:bg-amber-900/40 p-2 rounded-lg shrink-0">
+                      <Award className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold text-foreground truncate">{cert.projectName}</p>
+                      <p className="text-sm text-primary font-medium">{cert.ngoName}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{cert.startDate} → {cert.endDate}</p>
+                      <p className="text-xs text-muted-foreground">Issued: {cert.issueDate}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white self-center"
+                      onClick={() => setLocation(`/certificate/${cert.certId}`)}
+                      data-testid={`profile-cert-${cert.certId}`}
+                    >
+                      <FileText className="w-3.5 h-3.5 mr-1" /> View
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

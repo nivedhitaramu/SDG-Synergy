@@ -10,17 +10,14 @@ import {
   getCertificateForApplication, VolunteerApplication
 } from "@/lib/volunteer-store";
 import {
-  getSubmissionsByUser, getSubmissions, getCertificateForSubmission,
-  generateCertificateFromSubmission, updateSubmissionStatus,
-  isCertificateEligible, HelpSubmission, SubmissionCertificate,
-  SUBMISSION_TYPE_LABELS
+  getSubmissions, getCertificateForSubmission,
+  updateSubmissionStatus, isCertificateEligible,
+  HelpSubmission, SubmissionCertificate, SUBMISSION_TYPE_LABELS
 } from "@/lib/help-submissions";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { HandHeart, Award, CalendarDays, Clock, CheckCircle2, FileText, Inbox, Filter } from "lucide-react";
+import { HandHeart, Award, CalendarDays, Clock, CheckCircle2, FileText, ExternalLink } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
-import { SDG_DATA } from "@/lib/sdgs";
-import { NGO_DATA } from "@/lib/ngo-data";
 import { useToast } from "@/hooks/use-toast";
 
 type UnifiedRecord = {
@@ -38,13 +35,92 @@ type UnifiedRecord = {
   raw: VolunteerApplication | HelpSubmission;
 };
 
+type AllCert = {
+  certId: string;
+  volunteerName: string;
+  projectName: string;
+  ngoName: string;
+  startDate: string;
+  endDate: string;
+  issueDate: string;
+  source: "submission" | "legacy";
+};
+
+function getAllCertificates(): AllCert[] {
+  const certs: AllCert[] = [];
+  // New submission-based certs
+  try {
+    const subCerts: SubmissionCertificate[] = JSON.parse(localStorage.getItem("sdg_submission_certs") || "[]");
+    for (const c of subCerts) {
+      certs.push({ certId: c.certId, volunteerName: c.volunteerName, projectName: c.projectName, ngoName: c.ngoName, startDate: c.startDate, endDate: c.endDate, issueDate: c.issueDate, source: "submission" });
+    }
+  } catch { /* ignore */ }
+  // Legacy volunteer-store certs
+  try {
+    const legacyCerts: any[] = JSON.parse(localStorage.getItem("sdg_certificates") || "[]");
+    for (const c of legacyCerts) {
+      if (!certs.find(x => x.certId === c.certId)) {
+        certs.push({ certId: c.certId, volunteerName: c.volunteerName, projectName: c.projectName, ngoName: c.ngoName, startDate: c.startDate, endDate: c.endDate, issueDate: c.issueDate, source: "legacy" });
+      }
+    }
+  } catch { /* ignore */ }
+  return certs.sort((a, b) => b.certId.localeCompare(a.certId));
+}
+
+function CertCard({ cert, onView }: { cert: AllCert; onView: (certId: string) => void }) {
+  return (
+    <Card className="border border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-card hover-elevate" data-testid={`card-cert-${cert.certId}`}>
+      <CardContent className="p-5">
+        <div className="flex items-start gap-3 mb-3">
+          <div className="bg-amber-100 dark:bg-amber-900/40 p-2.5 rounded-xl shrink-0">
+            <Award className="w-5 h-5 text-amber-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-foreground truncate">{cert.projectName}</h3>
+            <p className="text-sm text-primary font-medium">{cert.ngoName}</p>
+          </div>
+          <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 text-xs shrink-0">
+            <CheckCircle2 className="w-3 h-3 mr-1" /> Completed
+          </Badge>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-4">
+          <div className="bg-muted/40 rounded-lg p-2">
+            <p className="font-semibold uppercase tracking-wider mb-0.5">Volunteer</p>
+            <p className="font-medium text-foreground">{cert.volunteerName}</p>
+          </div>
+          <div className="bg-muted/40 rounded-lg p-2">
+            <p className="font-semibold uppercase tracking-wider mb-0.5">Issued On</p>
+            <p className="font-medium text-foreground">{cert.issueDate}</p>
+          </div>
+          <div className="bg-muted/40 rounded-lg p-2">
+            <p className="font-semibold uppercase tracking-wider mb-0.5">Start</p>
+            <p className="font-medium text-foreground">{cert.startDate}</p>
+          </div>
+          <div className="bg-muted/40 rounded-lg p-2">
+            <p className="font-semibold uppercase tracking-wider mb-0.5">End</p>
+            <p className="font-medium text-foreground">{cert.endDate}</p>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button className="flex-1 bg-amber-600 hover:bg-amber-700 text-white" onClick={() => onView(cert.certId)} data-testid={`button-view-cert-${cert.certId}`}>
+            <FileText className="w-4 h-4 mr-1.5" /> View Certificate
+          </Button>
+        </div>
+
+        <p className="text-xs text-muted-foreground mt-2 font-mono">ID: {cert.certId}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
 function RecordCard({ record, onMarkComplete, onViewCert }: {
   record: UnifiedRecord;
   onMarkComplete: (record: UnifiedRecord) => void;
   onViewCert: (certId: string) => void;
 }) {
   const { t } = useTranslation();
-
   return (
     <Card className="border border-border/60 hover-elevate" data-testid={`card-application-${record.id}`}>
       <CardContent className="p-5">
@@ -54,12 +130,10 @@ function RecordCard({ record, onMarkComplete, onViewCert }: {
               <h3 className="font-bold text-foreground">{record.projectName}</h3>
               {record.status === "completed" ? (
                 <Badge className="bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300 text-xs">
-                  <CheckCircle2 className="w-3 h-3 mr-1" /> {t("volunteerDashboard.completedStatus")}
+                  <CheckCircle2 className="w-3 h-3 mr-1" /> Completed
                 </Badge>
               ) : (
-                <Badge variant="secondary" className="text-xs">
-                  <Clock className="w-3 h-3 mr-1" /> {t("volunteerDashboard.pending")}
-                </Badge>
+                <Badge variant="secondary" className="text-xs"><Clock className="w-3 h-3 mr-1" /> In Progress</Badge>
               )}
               {record.certificateEligible && (
                 <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 text-xs border-amber-200">
@@ -72,37 +146,30 @@ function RecordCard({ record, onMarkComplete, onViewCert }: {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 text-sm mb-4">
-          <div className="bg-muted/40 rounded-lg p-3">
-            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">
-              <CalendarDays className="w-3 h-3 inline mr-1" />{t("volunteerDashboard.period")}
-            </p>
+        <div className="grid grid-cols-2 gap-2 text-sm mb-4">
+          <div className="bg-muted/40 rounded-lg p-2.5">
+            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-0.5"><CalendarDays className="w-3 h-3 inline mr-1" />Period</p>
             <p className="font-medium text-foreground text-xs">
-              {record.startDate ? format(new Date(record.startDate), "dd MMM yyyy") : "—"} →{" "}
-              {record.endDate ? format(new Date(record.endDate), "dd MMM yyyy") : "—"}
+              {record.startDate ? format(new Date(record.startDate), "dd MMM yy") : "—"} → {record.endDate ? format(new Date(record.endDate), "dd MMM yy") : "—"}
             </p>
           </div>
-          <div className="bg-muted/40 rounded-lg p-3">
-            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">
-              {t("volunteerDashboard.appliedOn")}
-            </p>
-            <p className="font-medium text-foreground text-xs">
-              {formatDistanceToNow(new Date(record.appliedAt), { addSuffix: true })}
-            </p>
+          <div className="bg-muted/40 rounded-lg p-2.5">
+            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-0.5">Applied</p>
+            <p className="font-medium text-foreground text-xs">{formatDistanceToNow(new Date(record.appliedAt), { addSuffix: true })}</p>
           </div>
         </div>
 
         <div className="flex gap-2">
           {record.status === "pending" ? (
             <Button className="flex-1" onClick={() => onMarkComplete(record)} data-testid={`button-complete-${record.id}`}>
-              <CheckCircle2 className="w-4 h-4 mr-2" /> {t("volunteerDashboard.markCompleted")}
+              <CheckCircle2 className="w-4 h-4 mr-2" /> Mark Completed
             </Button>
           ) : record.certificateEligible && record.certId ? (
             <Button className="flex-1 bg-amber-600 hover:bg-amber-700 text-white" onClick={() => onViewCert(record.certId!)} data-testid={`button-certificate-${record.id}`}>
-              <Award className="w-4 h-4 mr-2" /> {t("volunteerDashboard.downloadCertificate")}
+              <Award className="w-4 h-4 mr-2" /> View Certificate
             </Button>
-          ) : record.status === "completed" && record.certificateEligible ? (
-            <p className="text-xs text-muted-foreground italic py-2">Certificate pending NGO confirmation</p>
+          ) : record.status === "completed" ? (
+            <p className="text-xs text-muted-foreground italic py-2">Completed · Certificate pending NGO confirmation</p>
           ) : null}
         </div>
       </CardContent>
@@ -115,18 +182,17 @@ export default function VolunteerHubPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [records, setRecords] = useState<UnifiedRecord[]>([]);
+  const [allCerts, setAllCerts] = useState<AllCert[]>([]);
   const [confirmRecord, setConfirmRecord] = useState<UnifiedRecord | null>(null);
-  const [viewCertId, setViewCertId] = useState<string | null>(null);
-  const [viewCertData, setViewCertData] = useState<any | null>(null);
-  const [activeTab, setActiveTab] = useState<"all" | "pending" | "completed">("all");
+  const [activeTab, setActiveTab] = useState<"applications" | "certificates">("applications");
+  const [appFilter, setAppFilter] = useState<"all" | "pending" | "completed">("all");
   const { toast } = useToast();
 
-  function buildRecords() {
+  function loadData() {
     const unified: UnifiedRecord[] = [];
 
-    // From volunteer-store
-    const apps = getApplications();
-    for (const app of apps) {
+    // From volunteer-store (legacy)
+    for (const app of getApplications()) {
       const certFromStore = getCertificateForApplication(app.id);
       unified.push({
         id: app.id,
@@ -144,13 +210,15 @@ export default function VolunteerHubPage() {
       });
     }
 
-    // From help-submissions — filter by current user id OR by userId match
+    // From help-submissions — user's own submissions (by userId OR by all if no userId set)
     const allSubs = getSubmissions();
     const userSubs = user
-      ? allSubs.filter(s => s.userId === user.id)
-      : [];
+      ? allSubs.filter(s => s.userId === user.id || s.userId === undefined)
+      : allSubs;
 
     for (const sub of userSubs) {
+      // Skip demo entries that have real volunteer names (they're not the current user)
+      if (!sub.userId && sub.id.startsWith("demo_") && !sub.id.startsWith("demo_cert")) continue;
       const cert = sub.status === "completed" ? getCertificateForSubmission(sub.id) : undefined;
       unified.push({
         id: sub.id,
@@ -168,61 +236,60 @@ export default function VolunteerHubPage() {
       });
     }
 
-    // Sort by appliedAt descending
     unified.sort((a, b) => new Date(b.appliedAt).getTime() - new Date(a.appliedAt).getTime());
     setRecords(unified);
+    setAllCerts(getAllCertificates());
   }
 
+  useEffect(() => { loadData(); }, [user]);
+
+  // Listen for localStorage changes (when admin marks completed in another view)
   useEffect(() => {
-    buildRecords();
+    const handler = () => loadData();
+    window.addEventListener("storage", handler);
+    // Also poll every 5s in case same-tab updates
+    const interval = setInterval(loadData, 5000);
+    return () => { window.removeEventListener("storage", handler); clearInterval(interval); };
   }, [user]);
 
-  function handleMarkComplete(record: UnifiedRecord) {
-    setConfirmRecord(record);
-  }
+  function handleMarkComplete(record: UnifiedRecord) { setConfirmRecord(record); }
 
   function confirmComplete() {
     if (!confirmRecord) return;
     if (confirmRecord.source === "volunteer_store") {
-      const cert = markVolunteerCompleted(confirmRecord.id);
-      toast({ title: "Marked Completed!", description: "Certificate generated. Click Download Certificate." });
+      markVolunteerCompleted(confirmRecord.id);
     } else {
-      const cert = updateSubmissionStatus(confirmRecord.id, "completed");
-      toast({ title: "Marked Completed!", description: cert ? "Certificate generated. Click Download Certificate." : "Status updated." });
+      updateSubmissionStatus(confirmRecord.id, "completed");
     }
+    toast({ title: "Marked Completed!", description: "Certificate generated. Check the Certificates tab." });
     setConfirmRecord(null);
-    buildRecords();
+    loadData();
+    setActiveTab("certificates");
   }
 
-  function handleViewCert(certId: string) {
-    setLocation(`/certificate/${certId}`);
-  }
+  function handleViewCert(certId: string) { setLocation(`/certificate/${certId}`); }
 
   const pending = records.filter(r => r.status === "pending");
   const completed = records.filter(r => r.status === "completed");
-  const certReady = completed.filter(r => r.certificateEligible && r.certId);
-
-  const displayed = activeTab === "all" ? records : activeTab === "pending" ? pending : completed;
+  const displayedApps = appFilter === "all" ? records : appFilter === "pending" ? pending : completed;
 
   return (
     <AppLayout>
       <div className="space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between flex-wrap gap-4">
+        <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <div className="bg-primary/10 p-2 rounded-xl text-primary">
-                <HandHeart className="w-6 h-6" />
-              </div>
+              <div className="bg-primary/10 p-2 rounded-xl text-primary"><HandHeart className="w-6 h-6" /></div>
               <h1 className="text-3xl font-display font-bold text-foreground">{t("volunteerDashboard.title")}</h1>
             </div>
             <p className="text-muted-foreground ml-14">{t("volunteerDashboard.subtitle")}</p>
           </div>
           <div className="flex gap-4 text-sm">
             {[
-              { label: t("volunteerDashboard.applied"), value: pending.length, color: "text-foreground" },
-              { label: t("volunteerDashboard.completed"), value: completed.length, color: "text-green-600" },
-              { label: "Certificates", value: certReady.length, color: "text-amber-600" },
+              { label: "Applications", value: records.length, color: "text-foreground" },
+              { label: "Completed", value: completed.length, color: "text-green-600" },
+              { label: "Certificates", value: allCerts.length, color: "text-amber-600" },
             ].map((s, i) => (
               <div key={i} className={`text-center ${i > 0 ? "border-l border-border pl-4" : ""}`}>
                 <p className={`text-2xl font-black font-display ${s.color}`}>{s.value}</p>
@@ -232,58 +299,91 @@ export default function VolunteerHubPage() {
           </div>
         </div>
 
-        {records.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 py-24 text-center">
-            <div className="bg-muted/50 p-6 rounded-2xl"><HandHeart className="w-16 h-16 text-muted-foreground/40 mx-auto" /></div>
-            <h3 className="text-xl font-bold text-foreground">No Applications Yet</h3>
-            <p className="text-muted-foreground max-w-sm">{t("volunteerDashboard.noApplications")}</p>
-            <Button onClick={() => setLocation("/ngos")}>{t("volunteerDashboard.browseNGOs")}</Button>
-          </div>
-        ) : (
-          <>
-            {/* Tabs */}
-            <div className="flex gap-2">
-              {([["all", "All", records.length], ["pending", "In Progress", pending.length], ["completed", "Completed", completed.length]] as const).map(([tab, label, count]) => (
-                <Button key={tab} size="sm" variant={activeTab === tab ? "default" : "outline"} onClick={() => setActiveTab(tab)}>
-                  {label} ({count})
-                </Button>
-              ))}
-            </div>
+        {/* Tab switcher */}
+        <div className="flex gap-2 border-b border-border/60 pb-0">
+          <button
+            onClick={() => setActiveTab("applications")}
+            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border-b-2 transition-all ${activeTab === "applications" ? "border-primary text-primary bg-primary/5" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+            data-testid="tab-applications"
+          >
+            <HandHeart className="w-4 h-4 inline mr-1.5" />Applications ({records.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("certificates")}
+            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border-b-2 transition-all flex items-center gap-1.5 ${activeTab === "certificates" ? "border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+            data-testid="tab-certificates"
+          >
+            <Award className="w-4 h-4" />Certificates
+            {allCerts.length > 0 && (
+              <span className="ml-1 bg-amber-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{allCerts.length}</span>
+            )}
+          </button>
+        </div>
 
-            {/* Certificates highlight */}
-            {certReady.length > 0 && activeTab !== "pending" && (
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Award className="w-5 h-5 text-amber-600" />
-                  <h3 className="font-semibold text-foreground">Certificates Ready</h3>
-                  <Badge className="bg-amber-100 text-amber-700 text-xs">{certReady.length}</Badge>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  {certReady.map(r => (
-                    <div key={r.id} className="bg-white dark:bg-card border border-amber-200 dark:border-amber-800 rounded-xl p-3 flex items-center justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-foreground text-sm">{r.projectName}</p>
-                        <p className="text-xs text-muted-foreground">{r.ngoName}</p>
-                      </div>
-                      <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white shrink-0" onClick={() => handleViewCert(r.certId!)}>
-                        <FileText className="w-3.5 h-3.5 mr-1" /> View
-                      </Button>
-                    </div>
+        {/* ── APPLICATIONS TAB ── */}
+        {activeTab === "applications" && (
+          <>
+            {records.length === 0 ? (
+              <div className="flex flex-col items-center gap-4 py-24 text-center">
+                <div className="bg-muted/50 p-6 rounded-2xl"><HandHeart className="w-16 h-16 text-muted-foreground/40 mx-auto" /></div>
+                <h3 className="text-xl font-bold text-foreground">No Applications Yet</h3>
+                <p className="text-muted-foreground max-w-sm">{t("volunteerDashboard.noApplications")}</p>
+                <Button onClick={() => setLocation("/ngos")}>{t("volunteerDashboard.browseNGOs")}</Button>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  {([["all", "All", records.length], ["pending", "In Progress", pending.length], ["completed", "Completed", completed.length]] as const).map(([filter, label, count]) => (
+                    <Button key={filter} size="sm" variant={appFilter === filter ? "default" : "outline"} onClick={() => setAppFilter(filter)}>
+                      {label} ({count})
+                    </Button>
                   ))}
                 </div>
-              </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {displayedApps.map(record => (
+                    <RecordCard key={record.id} record={record} onMarkComplete={handleMarkComplete} onViewCert={handleViewCert} />
+                  ))}
+                </div>
+              </>
             )}
+          </>
+        )}
 
-            <div className="grid sm:grid-cols-2 gap-4">
-              {displayed.map(record => (
-                <RecordCard key={record.id} record={record} onMarkComplete={handleMarkComplete} onViewCert={handleViewCert} />
-              ))}
-            </div>
+        {/* ── CERTIFICATES TAB ── */}
+        {activeTab === "certificates" && (
+          <>
+            {allCerts.length === 0 ? (
+              <div className="flex flex-col items-center gap-4 py-24 text-center">
+                <div className="bg-amber-50 dark:bg-amber-950/20 p-6 rounded-2xl border-2 border-dashed border-amber-200 dark:border-amber-800">
+                  <Award className="w-16 h-16 text-amber-400/50 mx-auto" />
+                </div>
+                <h3 className="text-xl font-bold text-foreground">No Certificates Yet</h3>
+                <p className="text-muted-foreground max-w-sm">
+                  Complete a volunteering or contribution — once marked completed by the project owner, your certificate will appear here.
+                </p>
+                <Button onClick={() => setActiveTab("applications")}>View My Applications</Button>
+              </div>
+            ) : (
+              <>
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-4 flex items-center gap-3">
+                  <Award className="w-6 h-6 text-amber-600 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-foreground">Your Certificates of Appreciation</p>
+                    <p className="text-sm text-muted-foreground">These certificates recognise your completed volunteering and contribution work across NGO and project activities.</p>
+                  </div>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {allCerts.map(cert => (
+                    <CertCard key={cert.certId} cert={cert} onView={handleViewCert} />
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
 
-      {/* Confirm complete dialog */}
+      {/* Confirm complete */}
       <Dialog open={!!confirmRecord} onOpenChange={() => setConfirmRecord(null)}>
         <DialogContent>
           <DialogHeader>
