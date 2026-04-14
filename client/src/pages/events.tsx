@@ -18,11 +18,12 @@ import type { SDGEvent } from "@shared/schema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useTranslation } from "react-i18next";
 
 const EVENT_TYPES = [
-  { value: "webinar", label: "Webinar", icon: Video, color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
-  { value: "field_visit", label: "Field Visit", icon: TreePine, color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" },
-  { value: "workshop", label: "Workshop", icon: BookOpen, color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
+  { value: "webinar", icon: Video, color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300" },
+  { value: "field_visit", icon: TreePine, color: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" },
+  { value: "workshop", icon: BookOpen, color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300" },
 ];
 
 function getEventTypeInfo(type: string) {
@@ -41,6 +42,7 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 function EventCard({ event, userId }: { event: SDGEvent; userId?: number }) {
+  const { t } = useTranslation();
   const joinEvent = useJoinEvent();
   const isOrganizer = event.organizerId === userId;
   const isAttending = userId ? event.attendees.includes(userId) : false;
@@ -55,6 +57,15 @@ function EventCard({ event, userId }: { event: SDGEvent; userId?: number }) {
     }
   };
 
+  const attendeeCount = event.attendees.length;
+  const attendeeLabel = attendeeCount === 1 ? t("events.attendee") : t("events.attendees");
+
+  const typeLabel = event.eventType === "webinar"
+    ? t("events.webinar")
+    : event.eventType === "field_visit"
+    ? t("events.fieldVisit")
+    : t("events.workshop");
+
   return (
     <Card className="hover-elevate active-elevate-2 transition-all border border-border/60 overflow-hidden" data-testid={`card-event-${event.id}`}>
       <CardHeader className="pb-3">
@@ -63,16 +74,16 @@ function EventCard({ event, userId }: { event: SDGEvent; userId?: number }) {
             <div className="flex items-center gap-2 mb-2">
               <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${typeInfo.color}`}>
                 <TypeIcon className="w-3 h-3" />
-                {typeInfo.label}
+                {typeLabel}
               </span>
               {isOrganizer && (
                 <Badge variant="outline" className="text-xs border-primary/40 text-primary">
-                  Organizer
+                  {t("events.organizer")}
                 </Badge>
               )}
               {isPast && (
                 <Badge variant="outline" className="text-xs text-muted-foreground">
-                  Past
+                  {t("events.past")}
                 </Badge>
               )}
             </div>
@@ -116,18 +127,18 @@ function EventCard({ event, userId }: { event: SDGEvent; userId?: number }) {
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="w-4 h-4 shrink-0" />
-            <span>{event.attendees.length} {event.attendees.length === 1 ? "attendee" : "attendees"}</span>
+            <span>{attendeeCount} {attendeeLabel}</span>
           </div>
         </div>
 
         <div className="pt-1">
           {isOrganizer ? (
             <Button variant="outline" size="sm" className="w-full" disabled>
-              You're hosting this
+              {t("events.youreHosting")}
             </Button>
           ) : isAttending ? (
             <Button variant="outline" size="sm" className="w-full text-primary border-primary/40" disabled>
-              ✓ Registered
+              {t("events.registered")}
             </Button>
           ) : (
             <Button
@@ -137,7 +148,7 @@ function EventCard({ event, userId }: { event: SDGEvent; userId?: number }) {
               disabled={joinEvent.isPending || isPast}
               data-testid={`button-join-event-${event.id}`}
             >
-              {joinEvent.isPending ? "Registering..." : isPast ? "Event Ended" : "Register Now"}
+              {joinEvent.isPending ? t("events.registering") : isPast ? t("events.eventEnded") : t("events.registerNow")}
             </Button>
           )}
         </div>
@@ -147,6 +158,7 @@ function EventCard({ event, userId }: { event: SDGEvent; userId?: number }) {
 }
 
 function CreateEventDialog({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation();
   const createEvent = useCreateEvent();
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -186,49 +198,46 @@ function CreateEventDialog({ onClose }: { onClose: () => void }) {
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
       <div className="space-y-1.5">
-        <Label htmlFor="title">Event Title</Label>
-        <Input id="title" placeholder="e.g. Clean Energy Innovations Webinar" {...form.register("title")} data-testid="input-event-title" />
+        <Label htmlFor="title">{t("events.eventTitle")}</Label>
+        <Input id="title" placeholder={t("events.eventTitlePlaceholder")} {...form.register("title")} data-testid="input-event-title" />
         {form.formState.errors.title && <p className="text-destructive text-xs">{form.formState.errors.title.message}</p>}
       </div>
 
       <div className="space-y-1.5">
-        <Label>Event Type</Label>
-        <Select
-          defaultValue="webinar"
-          onValueChange={val => form.setValue("eventType", val as any)}
-        >
+        <Label>{t("events.eventType")}</Label>
+        <Select defaultValue="webinar" onValueChange={val => form.setValue("eventType", val as any)}>
           <SelectTrigger data-testid="select-event-type">
-            <SelectValue placeholder="Select type" />
+            <SelectValue placeholder={t("events.eventTypeSelect")} />
           </SelectTrigger>
           <SelectContent>
-            {EVENT_TYPES.map(t => (
-              <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-            ))}
+            <SelectItem value="webinar">{t("events.webinar")}</SelectItem>
+            <SelectItem value="field_visit">{t("events.fieldVisit")}</SelectItem>
+            <SelectItem value="workshop">{t("events.workshop")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="description">Description</Label>
-        <Textarea id="description" placeholder="What will participants learn or experience?" rows={3} {...form.register("description")} data-testid="input-event-description" />
+        <Label htmlFor="description">{t("events.description")}</Label>
+        <Textarea id="description" placeholder={t("events.descriptionPlaceholder")} rows={3} {...form.register("description")} data-testid="input-event-description" />
         {form.formState.errors.description && <p className="text-destructive text-xs">{form.formState.errors.description.message}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="date">Date & Time</Label>
+          <Label htmlFor="date">{t("events.dateTime")}</Label>
           <Input id="date" type="datetime-local" {...form.register("date")} data-testid="input-event-date" />
           {form.formState.errors.date && <p className="text-destructive text-xs">{form.formState.errors.date.message}</p>}
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="location">Location / Link</Label>
-          <Input id="location" placeholder="City or Zoom link" {...form.register("location")} data-testid="input-event-location" />
+          <Label htmlFor="location">{t("events.locationLink")}</Label>
+          <Input id="location" placeholder={t("events.locationLinkPlaceholder")} {...form.register("location")} data-testid="input-event-location" />
           {form.formState.errors.location && <p className="text-destructive text-xs">{form.formState.errors.location.message}</p>}
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label>Related SDGs <span className="text-muted-foreground text-xs">(select up to 5)</span></Label>
+        <Label>{t("events.relatedSDGs")} <span className="text-muted-foreground text-xs">{t("events.selectSDGs")}</span></Label>
         <div className="grid grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-1">
           {SDG_DATA.map(sdg => {
             const selected = selectedSDGs.includes(sdg.id);
@@ -239,9 +248,7 @@ function CreateEventDialog({ onClose }: { onClose: () => void }) {
                 type="button"
                 onClick={() => toggleSDG(sdg.id)}
                 className={`flex items-center gap-1 px-2 py-1.5 rounded text-xs font-medium border transition-all ${
-                  selected
-                    ? "text-white border-transparent"
-                    : "text-foreground border-border hover:border-primary/40"
+                  selected ? "text-white border-transparent" : "text-foreground border-border hover:border-primary/40"
                 }`}
                 style={selected ? { backgroundColor: sdg.color, borderColor: sdg.color } : {}}
                 data-testid={`button-sdg-${sdg.id}`}
@@ -255,13 +262,14 @@ function CreateEventDialog({ onClose }: { onClose: () => void }) {
       </div>
 
       <Button type="submit" className="w-full" disabled={createEvent.isPending} data-testid="button-submit-event">
-        {createEvent.isPending ? "Creating..." : "Create Event"}
+        {createEvent.isPending ? t("events.creating") : t("events.createEvent")}
       </Button>
     </form>
   );
 }
 
 export default function EventsPage() {
+  const { t } = useTranslation();
   const { data: events, isLoading } = useEvents();
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -277,23 +285,21 @@ export default function EventsPage() {
           <div>
             <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
               <span className="text-3xl">🗓️</span>
-              SDG Events
+              {t("events.title")}
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Join webinars, workshops, and field visits tied to the UN Sustainable Development Goals
-            </p>
+            <p className="text-muted-foreground mt-1">{t("events.subtitle")}</p>
           </div>
 
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2" data-testid="button-create-event">
                 <Plus className="w-4 h-4" />
-                Host Event
+                {t("events.hostEvent")}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Host an SDG Event</DialogTitle>
+                <DialogTitle>{t("events.hostEventDialog")}</DialogTitle>
               </DialogHeader>
               <CreateEventDialog onClose={() => setOpen(false)} />
             </DialogContent>
@@ -303,18 +309,18 @@ export default function EventsPage() {
         <Tabs defaultValue="upcoming">
           <TabsList className="mb-4">
             <TabsTrigger value="upcoming" data-testid="tab-upcoming">
-              Upcoming
+              {t("events.tabUpcoming")}
               {upcomingEvents.length > 0 && (
                 <span className="ml-1.5 bg-primary/10 text-primary text-xs rounded-full px-1.5 py-0.5">{upcomingEvents.length}</span>
               )}
             </TabsTrigger>
             <TabsTrigger value="mine" data-testid="tab-mine">
-              My Events
+              {t("events.tabMine")}
               {myEvents.length > 0 && (
                 <span className="ml-1.5 bg-primary/10 text-primary text-xs rounded-full px-1.5 py-0.5">{myEvents.length}</span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="past" data-testid="tab-past">Past</TabsTrigger>
+            <TabsTrigger value="past" data-testid="tab-past">{t("events.tabPast")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="upcoming">
@@ -325,10 +331,10 @@ export default function EventsPage() {
             ) : upcomingEvents.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
                 <Calendar className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                <p className="text-lg font-medium">No upcoming events yet</p>
-                <p className="text-sm mt-1">Be the first to host an event for the SDG community!</p>
+                <p className="text-lg font-medium">{t("events.noUpcoming")}</p>
+                <p className="text-sm mt-1">{t("events.noUpcomingDesc")}</p>
                 <Button className="mt-4 gap-2" onClick={() => setOpen(true)}>
-                  <Plus className="w-4 h-4" /> Host an Event
+                  <Plus className="w-4 h-4" /> {t("events.hostAnEvent")}
                 </Button>
               </div>
             ) : (
@@ -348,8 +354,8 @@ export default function EventsPage() {
             ) : myEvents.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
                 <Users className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                <p className="text-lg font-medium">You haven't joined any events</p>
-                <p className="text-sm mt-1">Register for an upcoming event or host your own.</p>
+                <p className="text-lg font-medium">{t("events.noMyEvents")}</p>
+                <p className="text-sm mt-1">{t("events.noMyEventsDesc")}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -368,7 +374,7 @@ export default function EventsPage() {
             ) : pastEvents.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
                 <Clock className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                <p className="text-lg font-medium">No past events</p>
+                <p className="text-lg font-medium">{t("events.noPast")}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

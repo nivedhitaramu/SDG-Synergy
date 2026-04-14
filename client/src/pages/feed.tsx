@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Rss, UserPlus, FolderPlus, Users, CalendarDays, CalendarCheck } from "lucide-react";
 import { SDG_DATA } from "@/lib/sdgs";
 import { formatDistanceToNow } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 type FeedEvent = {
   id: number;
@@ -16,34 +17,6 @@ type FeedEvent = {
   createdAt: string;
   user?: { id: number; name: string; orgType: string; location: string; sdgs: number[] };
   project?: { id: number; title: string; sdgs: number[] };
-};
-
-const EVENT_CONFIG: Record<string, { icon: any; color: string; label: (e: FeedEvent) => string }> = {
-  user_joined: {
-    icon: UserPlus,
-    color: "text-green-600 bg-green-100 dark:bg-green-900/30",
-    label: (e) => `${e.user?.name || "Someone"} joined as ${e.metadata.orgType || "member"} from ${e.metadata.location || "India"}`,
-  },
-  project_created: {
-    icon: FolderPlus,
-    color: "text-blue-600 bg-blue-100 dark:bg-blue-900/30",
-    label: (e) => `${e.user?.name || "Someone"} launched a new project: "${e.project?.title || e.metadata.projectTitle}"`,
-  },
-  project_joined: {
-    icon: Users,
-    color: "text-purple-600 bg-purple-100 dark:bg-purple-900/30",
-    label: (e) => `${e.user?.name || "Someone"} joined the project: "${e.project?.title || e.metadata.projectTitle}"`,
-  },
-  event_created: {
-    icon: CalendarDays,
-    color: "text-orange-600 bg-orange-100 dark:bg-orange-900/30",
-    label: (e) => `${e.user?.name || "Someone"} created a new ${e.metadata.eventType?.replace('_', ' ') || "event"}: "${e.metadata.eventTitle}"`,
-  },
-  event_joined: {
-    icon: CalendarCheck,
-    color: "text-teal-600 bg-teal-100 dark:bg-teal-900/30",
-    label: (e) => `${e.user?.name || "Someone"} registered for: "${e.metadata.eventTitle}"`,
-  },
 };
 
 function SdgPill({ id }: { id: number }) {
@@ -60,6 +33,36 @@ function SdgPill({ id }: { id: number }) {
 }
 
 function FeedCard({ event }: { event: FeedEvent }) {
+  const { t } = useTranslation();
+
+  const EVENT_CONFIG: Record<string, { icon: any; color: string; label: () => string }> = {
+    user_joined: {
+      icon: UserPlus,
+      color: "text-green-600 bg-green-100 dark:bg-green-900/30",
+      label: () => `${event.user?.name || "Someone"} joined as ${event.metadata.orgType || "member"} from ${event.metadata.location || "India"}`,
+    },
+    project_created: {
+      icon: FolderPlus,
+      color: "text-blue-600 bg-blue-100 dark:bg-blue-900/30",
+      label: () => `${event.user?.name || "Someone"} launched a new project: "${event.project?.title || event.metadata.projectTitle}"`,
+    },
+    project_joined: {
+      icon: Users,
+      color: "text-purple-600 bg-purple-100 dark:bg-purple-900/30",
+      label: () => `${event.user?.name || "Someone"} joined the project: "${event.project?.title || event.metadata.projectTitle}"`,
+    },
+    event_created: {
+      icon: CalendarDays,
+      color: "text-orange-600 bg-orange-100 dark:bg-orange-900/30",
+      label: () => `${event.user?.name || "Someone"} created a new ${event.metadata.eventType?.replace('_', ' ') || "event"}: "${event.metadata.eventTitle}"`,
+    },
+    event_joined: {
+      icon: CalendarCheck,
+      color: "text-teal-600 bg-teal-100 dark:bg-teal-900/30",
+      label: () => `${event.user?.name || "Someone"} registered for: "${event.metadata.eventTitle}"`,
+    },
+  };
+
   const config = EVENT_CONFIG[event.type];
   if (!config) return null;
   const Icon = config.icon;
@@ -73,9 +76,7 @@ function FeedCard({ event }: { event: FeedEvent }) {
           <Icon className="w-5 h-5" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-foreground leading-snug">
-            {config.label(event)}
-          </p>
+          <p className="text-sm font-medium text-foreground leading-snug">{config.label()}</p>
           {sdgs.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {sdgs.slice(0, 3).map(id => <SdgPill key={id} id={id} />)}
@@ -94,6 +95,7 @@ function FeedCard({ event }: { event: FeedEvent }) {
 }
 
 export default function FeedPage() {
+  const { t } = useTranslation();
   const { data: events = [], isLoading } = useQuery<FeedEvent[]>({
     queryKey: ["/api/feed"],
   });
@@ -106,8 +108,8 @@ export default function FeedPage() {
             <Rss className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">SDG Impact Feed</h1>
-            <p className="text-sm text-muted-foreground">Live activity from the SDG Synergy community</p>
+            <h1 className="text-2xl font-bold text-foreground">{t("feed.title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("feed.subtitle")}</p>
           </div>
         </div>
 
@@ -128,8 +130,8 @@ export default function FeedPage() {
         ) : events.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
             <Rss className="w-12 h-12 mx-auto mb-4 opacity-30" />
-            <p className="text-lg font-medium">No activity yet</p>
-            <p className="text-sm mt-1">Be the first — create a project or connect with someone!</p>
+            <p className="text-lg font-medium">{t("feed.noActivity")}</p>
+            <p className="text-sm mt-1">{t("feed.noActivityDesc")}</p>
           </div>
         ) : (
           <div className="space-y-3">

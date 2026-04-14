@@ -1,0 +1,226 @@
+Fix the multilingual system in my SDG Synergy app so that language switching works for the FULL WEBSITE, not just the navbar.
+
+CURRENT PROBLEM:
+Right now, when I switch the language to Hindi or Tamil, only the navigation bar text changes properly. Most of the rest of the website still stays in English.
+
+EXPECTED RESULT:
+When I switch language to English, Hindi, or Tamil, the entire website should update immediately, including:
+- navbar
+- hero section
+- headings
+- paragraphs
+- buttons
+- cards
+- NGO listings
+- project dashboard
+- forms
+- placeholders
+- filter labels
+- status badges
+- certificate text
+- dashboard tables
+- notifications
+- empty states
+- success/error messages
+- footer
+- modal text
+- any dynamic labels
+
+IMPORTANT:
+This is a college project prototype, so use mock/demo data only.
+Do not break existing features like volunteer applications, dashboard submissions, project cards, and certificate generation.
+
+CORE FIX REQUIRED:
+The app currently has partial language support because only some text is connected to the translation system.
+Refactor the app so that ALL user-facing text is pulled from translation keys.
+
+IMPLEMENTATION REQUIREMENTS:
+- If the app is React, use react-i18next / i18next properly across the full app.
+- If the app is plain HTML/CSS/JS, create a centralized translation dictionary and a reusable translation update mechanism.
+- Create translation resources for:
+  - English (en)
+  - Tamil (ta)
+  - Hindi (hi)
+- Ensure all pages and components subscribe to the current language and re-render on change.
+
+ROOT CAUSE TO FIX:
+Search through the codebase and identify all hardcoded English strings in:
+- components
+- pages
+- cards
+- modals
+- forms
+- dashboard
+- certificate templates
+- notification text
+- CTA buttons
+Replace them with translation keys.
+
+TRANSLATION ARCHITECTURE:
+Create organized translation namespaces / sections such as:
+- common
+- navbar
+- home
+- ngo
+- projects
+- dashboard
+- forms
+- certificate
+- notifications
+- status
+- footer
+
+Example structure:
+translations.en = {
+  common: {...},
+  navbar: {...},
+  home: {...},
+  ngo: {...},
+  projects: {...},
+  dashboard: {...},
+  forms: {...},
+  certificate: {...},
+  notifications: {...},
+  status: {...},
+  footer: {...}
+}
+
+Do the same for Tamil and Hindi.
+
+REFACTOR REQUIREMENT:
+Replace hardcoded text like:
+- "Get Started"
+- "Volunteer"
+- "Apply Now"
+- "Project Dashboard"
+- "Offers Help"
+- "Requests Help"
+- "Completed Volunteering"
+- "Download Certificate"
+- "No submissions yet"
+- "Search NGOs"
+and all similar strings
+with translation keys such as:
+- t("common.getStarted")
+- t("projects.volunteer")
+- t("dashboard.noSubmissions")
+etc.
+
+DYNAMIC CONTENT REQUIREMENT:
+For text that contains variables, use interpolation instead of hardcoding.
+Examples:
+- “Welcome, {{name}}”
+- “{{count}} applications received”
+- “Certificate issued on {{date}}”
+- “Matched because of {{sdg}}”
+Make sure interpolation works in English, Tamil, and Hindi.
+
+VERY IMPORTANT FOR NGO / PROJECT DATA:
+The NGO names can remain in their original names.
+But all surrounding labels and descriptions shown in UI must support translation.
+For NGO/project descriptions and impact text, do one of the following:
+1. Store descriptionEn, descriptionTa, descriptionHi
+   and impactEn, impactTa, impactHi
+OR
+2. Use translation keys mapped by NGO/project id
+Choose the cleaner approach for the existing codebase.
+
+FORMS MUST BE TRANSLATED:
+Translate all form labels and placeholders:
+- Full Name
+- Email
+- Phone Number
+- Start Date
+- End Date
+- Skills
+- Reason for Volunteering
+- Type of Help
+- Availability
+- Submit
+- Cancel
+- Search
+- Filter by SDG
+- View Details
+
+CERTIFICATE MUST BE FULLY TRANSLATED:
+The certificate page/modal must also switch language fully.
+Translate:
+- title
+- body text
+- labels
+- issue date
+- certificate ID
+- project name label
+- NGO name label
+- volunteering completed message
+If the selected language is Tamil, the full certificate text should appear in Tamil.
+If Hindi, full certificate text should appear in Hindi.
+
+STATUS / BADGE TRANSLATION:
+Translate all status labels:
+- New
+- Reviewed
+- Contacted
+- Approved
+- Rejected
+- Completed
+- Requests Help
+- Offers Help
+- Volunteer Open
+- Certificate Eligible
+
+NOTIFICATION TRANSLATION:
+Translate all dashboard and app notifications, such as:
+- New volunteer application received
+- Submission saved successfully
+- Certificate generated successfully
+- Language changed
+- No projects found
+- No NGOs found
+
+PAGE COVERAGE CHECK:
+Audit and translate all these pages/sections:
+- home page
+- NGO directory
+- project cards
+- projects dashboard
+- volunteer dashboard
+- owner/admin dashboard
+- submission details modal
+- language switcher
+- certificate view
+- notifications
+- footer
+- empty states / loading states
+
+TECHNICAL REQUIREMENT:
+Make sure changing the language causes the entire app to re-render with translated content immediately.
+Do not require page refresh.
+Do not leave any English fallback visible except where intentionally allowed.
+If a translation key is missing, use English as fallback.
+
+LANGUAGE PERSISTENCE:
+Persist the selected language across page navigation.
+If possible, use the i18next language state properly.
+If localStorage is blocked in the environment, use a global app state / context / in-memory state that survives route changes if supported by the app.
+Do not allow navigation to reset language back to English.
+
+QUALITY CHECK:
+After implementing, do a full language audit and fix any untranslated text still visible in English.
+Specifically verify:
+- Tamil full page translation
+- Hindi full page translation
+- navigation between pages keeps the selected language
+- forms, dashboard, and certificate text all switch correctly
+- dynamic project cards and NGO cards also translate
+- no mixed-language UI remains except NGO names if intended
+
+OPTIONAL IMPROVEMENT:
+Create a helper utility for translations so future new components cannot accidentally add hardcoded English strings.
+For example:
+- reusable translation hook
+- reusable localized text helper
+- centralized translation key conventions
+
+DELIVERABLE:
+Please inspect the current codebase, identify why only navbar translations are working, and refactor the app so language switching applies across the full website, including all pages, dynamic sections, dashboard content, forms, and certificate text.

@@ -473,9 +473,9 @@ export default function SubmissionsPage() {
               <div className="bg-primary/10 p-2 rounded-xl text-primary">
                 <Inbox className="w-6 h-6" />
               </div>
-              <h1 className="text-3xl font-display font-bold text-foreground">Help Submissions</h1>
+              <h1 className="text-3xl font-display font-bold text-foreground">{t("submissions.title")}</h1>
             </div>
-            <p className="text-muted-foreground ml-14">All incoming volunteer applications, offers, and collaboration requests</p>
+            <p className="text-muted-foreground ml-14">{t("submissions.subtitle")}</p>
           </div>
           <div className="relative">
             <Button

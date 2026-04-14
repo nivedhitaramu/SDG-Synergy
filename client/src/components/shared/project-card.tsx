@@ -8,6 +8,7 @@ import type { Project } from "@shared/schema";
 import { Users, LogIn, HandHeart, Wrench, DollarSign, GraduationCap, UserCheck, Megaphone, Scale, Award } from "lucide-react";
 import { useJoinProject } from "@/hooks/use-api";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "react-i18next";
 
 const HELP_TYPE_ICONS: Record<string, any> = {
   "Technical": Wrench,
@@ -21,6 +22,7 @@ const HELP_TYPE_ICONS: Record<string, any> = {
 export function ProjectCard({ project }: { project: Project }) {
   const joinProject = useJoinProject();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [activeHelpType, setActiveHelpType] = useState<string | null>(null);
 
   const isMember = user && project.members.includes(user.id);
@@ -38,7 +40,7 @@ export function ProjectCard({ project }: { project: Project }) {
               {helpNeeded && (
                 <div className="flex items-center gap-1.5 mt-1.5">
                   <span className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200 dark:border-orange-800">
-                    <HandHeart className="w-3 h-3" /> Help Wanted
+                    <HandHeart className="w-3 h-3" /> {t("projects.helpWanted")}
                   </span>
                 </div>
               )}
@@ -64,11 +66,11 @@ export function ProjectCard({ project }: { project: Project }) {
           <div className="mt-auto pt-4 space-y-3">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1">Needs</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1">{t("projects.needs")}</span>
                 <span className="font-medium text-foreground">{project.resourcesNeeded}</span>
               </div>
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1">Offers</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1">{t("projects.offers")}</span>
                 <span className="font-medium text-foreground">{project.resourcesOffered}</span>
               </div>
             </div>
@@ -76,7 +78,7 @@ export function ProjectCard({ project }: { project: Project }) {
             {helpNeeded && helpTypes.length > 0 && (
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground block mb-1.5">
-                  Click to offer help:
+                  {t("projects.clickToOffer")}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {helpTypes.map(type => {
@@ -98,11 +100,11 @@ export function ProjectCard({ project }: { project: Project }) {
                 </div>
                 {helpTypes.includes("Volunteers") && (
                   <div className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
-                    <Award className="w-3 h-3" /> Certificate Eligible
+                    <Award className="w-3 h-3" /> {t("projects.certificateEligible")}
                   </div>
                 )}
                 {!isOwner && (
-                  <p className="text-xs text-muted-foreground mt-1.5">Tap a tag to offer that specific help</p>
+                  <p className="text-xs text-muted-foreground mt-1.5">{t("projects.tapTagDesc")}</p>
                 )}
               </div>
             )}
@@ -111,10 +113,10 @@ export function ProjectCard({ project }: { project: Project }) {
 
         <CardFooter className="p-5 pt-0">
           {isOwner ? (
-            <Button variant="secondary" className="w-full" disabled>Your Project</Button>
+            <Button variant="secondary" className="w-full" disabled>{t("projects.yourProject")}</Button>
           ) : isMember ? (
             <Button variant="outline" className="w-full text-green-600 border-green-200 bg-green-50 hover:bg-green-100 dark:bg-green-900/20 dark:border-green-800" disabled>
-              ✓ Contributing
+              {t("projects.contributing")}
             </Button>
           ) : helpNeeded ? (
             <Button
@@ -123,7 +125,7 @@ export function ProjectCard({ project }: { project: Project }) {
               onClick={() => helpTypes.length > 0 ? setActiveHelpType(helpTypes[0]) : joinProject.mutate(project.id)}
               disabled={joinProject.isPending}
             >
-              <HandHeart className="w-4 h-4 mr-2" /> Offer Help
+              <HandHeart className="w-4 h-4 mr-2" /> {t("projects.offerHelp")}
             </Button>
           ) : (
             <Button
@@ -132,13 +134,12 @@ export function ProjectCard({ project }: { project: Project }) {
               onClick={() => joinProject.mutate(project.id)}
               disabled={joinProject.isPending}
             >
-              <LogIn className="w-4 h-4 mr-2" /> Join Project
+              <LogIn className="w-4 h-4 mr-2" /> {t("projects.joinProject")}
             </Button>
           )}
         </CardFooter>
       </Card>
 
-      {/* Help Offer Dialog */}
       {activeHelpType && (
         <HelpOfferDialog
           open={!!activeHelpType}

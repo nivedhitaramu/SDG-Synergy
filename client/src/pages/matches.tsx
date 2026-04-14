@@ -5,13 +5,13 @@ import { useMatches } from "@/hooks/use-api";
 import { MatchCard } from "@/components/shared/match-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Sparkles, Target, MapPin, Building2, Star, Brain } from "lucide-react";
 import { SDG_DATA } from "@/lib/sdgs";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 
 type AiSuggestion = {
   user: {
@@ -41,17 +41,17 @@ function SdgBadge({ id }: { id: number }) {
 
 function AiSuggestionCard({ suggestion }: { suggestion: AiSuggestion }) {
   const { toast } = useToast();
-  const [connecting, setConnecting] = useState(false);
+  const { t } = useTranslation();
 
   const connectMutation = useMutation({
     mutationFn: () => apiRequest("POST", "/api/matches/request", { targetUserId: suggestion.user.id, aiReason: suggestion.aiReason }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/matches"] });
       queryClient.invalidateQueries({ queryKey: ["/api/matches/ai-suggestions"] });
-      toast({ title: "Connection request sent!", description: `You sent a request to ${suggestion.user.name}.` });
+      toast({ title: t("matches.requestSent"), description: t("matches.requestSentDesc", { name: suggestion.user.name }) });
     },
     onError: () => {
-      toast({ title: "Failed to connect", variant: "destructive" });
+      toast({ title: t("matches.failedConnect"), variant: "destructive" });
     }
   });
 
@@ -76,29 +76,26 @@ function AiSuggestionCard({ suggestion }: { suggestion: AiSuggestion }) {
               <Star className="w-3.5 h-3.5" />
               {suggestion.score}%
             </div>
-            <span className="text-xs text-muted-foreground">AI Match Score</span>
+            <span className="text-xs text-muted-foreground">{t("matches.aiMatchScore")}</span>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* AI Reason */}
         <div className="bg-muted/40 rounded-lg p-3 border border-border/40">
           <div className="flex items-center gap-1.5 text-xs font-medium text-primary mb-1.5">
             <Brain className="w-3.5 h-3.5" />
-            Why this match?
+            {t("matches.whyMatch")}
           </div>
           <p className="text-sm text-foreground/80 leading-relaxed">{suggestion.aiReason}</p>
         </div>
 
-        {/* SDGs */}
         <div className="flex flex-wrap gap-1">
           {suggestion.user.sdgs.slice(0, 4).map(id => <SdgBadge key={id} id={id} />)}
         </div>
 
-        {/* Expertise */}
         {suggestion.user.expertise && (
           <p className="text-xs text-muted-foreground line-clamp-1">
-            <span className="font-medium">Expertise:</span> {suggestion.user.expertise}
+            <span className="font-medium">{t("matches.expertise")}</span> {suggestion.user.expertise}
           </p>
         )}
 
@@ -108,7 +105,7 @@ function AiSuggestionCard({ suggestion }: { suggestion: AiSuggestion }) {
           onClick={() => connectMutation.mutate()}
           disabled={connectMutation.isPending}
         >
-          {connectMutation.isPending ? "Sending…" : "Connect"}
+          {connectMutation.isPending ? t("matches.sending") : t("matches.connect")}
         </Button>
       </CardContent>
     </Card>
@@ -116,6 +113,7 @@ function AiSuggestionCard({ suggestion }: { suggestion: AiSuggestion }) {
 }
 
 function AiSuggestionsTab() {
+  const { t } = useTranslation();
   const { data: suggestions, isLoading, refetch, isFetching } = useQuery<AiSuggestion[]>({
     queryKey: ["/api/matches/ai-suggestions"],
     staleTime: 5 * 60 * 1000,
@@ -127,7 +125,7 @@ function AiSuggestionsTab() {
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Sparkles className="w-4 h-4 animate-pulse text-primary" />
-          AI is finding your best matches…
+          {t("matches.aiSearching")}
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
@@ -151,10 +149,10 @@ function AiSuggestionsTab() {
     return (
       <div className="text-center py-20 bg-muted/20 rounded-xl border border-dashed border-border text-muted-foreground">
         <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-30" />
-        <p className="font-medium">No new suggestions right now</p>
-        <p className="text-sm mt-1">You may have already matched with everyone available, or more users need to join.</p>
+        <p className="font-medium">{t("matches.noSuggestions")}</p>
+        <p className="text-sm mt-1">{t("matches.noSuggestionsDesc")}</p>
         <Button variant="outline" size="sm" className="mt-4" onClick={() => refetch()}>
-          Refresh
+          {t("matches.refresh")}
         </Button>
       </div>
     );
@@ -165,10 +163,10 @@ function AiSuggestionsTab() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Sparkles className="w-4 h-4 text-primary" />
-          <span>AI found <strong>{suggestions.length}</strong> potential partners for you</span>
+          <span dangerouslySetInnerHTML={{ __html: t("matches.aiFound", { count: `<strong>${suggestions.length}</strong>` }) }} />
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching} data-testid="refresh-ai">
-          Refresh
+          {t("matches.refresh")}
         </Button>
       </div>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -179,6 +177,7 @@ function AiSuggestionsTab() {
 }
 
 export default function MatchesPage() {
+  const { t } = useTranslation();
   const { data: matches, isLoading } = useMatches();
 
   const pending = matches?.filter(m => m.status === 'pending') || [];
@@ -190,21 +189,19 @@ export default function MatchesPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-display font-bold text-foreground flex items-center gap-3">
           <Sparkles className="w-8 h-8 text-primary" />
-          AI Matches
+          {t("matches.title")}
         </h1>
-        <p className="text-muted-foreground mt-2 text-lg">
-          AI-powered partner discovery based on your SDG goals, expertise, and projects.
-        </p>
+        <p className="text-muted-foreground mt-2 text-lg">{t("matches.subtitle")}</p>
       </div>
 
       <Tabs defaultValue="ai" className="w-full">
         <TabsList className="mb-6 grid grid-cols-4 w-[500px]">
           <TabsTrigger value="ai" data-testid="tab-ai" className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" /> AI Picks
+            <Sparkles className="w-3.5 h-3.5" /> {t("matches.tabAI")}
           </TabsTrigger>
-          <TabsTrigger value="pending" data-testid="tab-pending">Pending ({pending.length})</TabsTrigger>
-          <TabsTrigger value="active" data-testid="tab-active">Active ({active.length})</TabsTrigger>
-          <TabsTrigger value="history" data-testid="tab-history">Skipped ({rejected.length})</TabsTrigger>
+          <TabsTrigger value="pending" data-testid="tab-pending">{t("matches.tabPending")} ({pending.length})</TabsTrigger>
+          <TabsTrigger value="active" data-testid="tab-active">{t("matches.tabActive")} ({active.length})</TabsTrigger>
+          <TabsTrigger value="history" data-testid="tab-history">{t("matches.tabSkipped")} ({rejected.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="ai" className="mt-0">
@@ -223,7 +220,7 @@ export default function MatchesPage() {
           ) : (
             <div className="text-center py-20 bg-muted/20 rounded-xl border border-dashed border-border text-muted-foreground">
               <Target className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p>No pending matches. Try connecting from AI Picks!</p>
+              <p>{t("matches.noPending")}</p>
             </div>
           )}
         </TabsContent>
@@ -235,7 +232,7 @@ export default function MatchesPage() {
             </div>
           ) : (
             <div className="text-center py-20 bg-muted/20 rounded-xl border border-dashed border-border text-muted-foreground">
-              <p>No active connections yet.</p>
+              <p>{t("matches.noActive")}</p>
             </div>
           )}
         </TabsContent>
@@ -247,7 +244,7 @@ export default function MatchesPage() {
             </div>
           ) : (
             <div className="text-center py-20 bg-muted/20 rounded-xl border border-dashed border-border text-muted-foreground">
-              <p>No skipped matches.</p>
+              <p>{t("matches.noSkipped")}</p>
             </div>
           )}
         </TabsContent>

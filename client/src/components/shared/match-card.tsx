@@ -6,17 +6,18 @@ import { Check, X, Building2, MapPin, Brain, Mail, Phone, Home, CheckCircle2 } f
 import { SDGBadge } from "./sdg-badge";
 import type { MatchWithDetails } from "@shared/schema";
 import { useUpdateMatchStatus } from "@/hooks/use-api";
+import { useTranslation } from "react-i18next";
 
 export function MatchCard({ match }: { match: MatchWithDetails }) {
   const updateMatch = useUpdateMatchStatus();
+  const { t } = useTranslation();
 
   const otherUser = match.otherUser;
   if (!otherUser) return null;
 
-  // Determine score color
-  const scoreColor = 
-    match.score >= 80 ? "text-green-500 bg-green-500/10" : 
-    match.score >= 50 ? "text-yellow-500 bg-yellow-500/10" : 
+  const scoreColor =
+    match.score >= 80 ? "text-green-500 bg-green-500/10" :
+    match.score >= 50 ? "text-yellow-500 bg-yellow-500/10" :
     "text-orange-500 bg-orange-500/10";
 
   return (
@@ -45,23 +46,23 @@ export function MatchCard({ match }: { match: MatchWithDetails }) {
 
         <div className="space-y-4">
           <div>
-            <h4 className="text-sm font-semibold mb-2 text-foreground/80">Shared SDG Focus</h4>
+            <h4 className="text-sm font-semibold mb-2 text-foreground/80">{t("matches.sharedSDG")}</h4>
             <div className="flex flex-wrap gap-2">
               {otherUser.sdgs.map(sdg => (
                 <SDGBadge key={sdg} id={sdg} />
               ))}
             </div>
           </div>
-          
+
           <div className="bg-muted/50 p-3 rounded-lg border border-border/50">
-            <h4 className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">Expertise Offered</h4>
+            <h4 className="text-xs uppercase tracking-wider font-bold text-muted-foreground mb-1">{t("matches.expertiseOffered")}</h4>
             <p className="text-sm font-medium">{otherUser.expertise}</p>
           </div>
 
           {match.aiReason && (
             <div className="bg-primary/5 p-3 rounded-lg border border-primary/20">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-primary mb-1">
-                <Brain className="w-3.5 h-3.5" /> AI Match Insight
+                <Brain className="w-3.5 h-3.5" /> {t("matches.aiMatchInsight")}
               </div>
               <p className="text-xs text-foreground/70 leading-relaxed">{match.aiReason}</p>
             </div>
@@ -71,29 +72,29 @@ export function MatchCard({ match }: { match: MatchWithDetails }) {
 
       {match.status === 'pending' && (
         <CardFooter className="p-4 pt-0 gap-3 border-t border-border/30 bg-muted/20">
-          <Button 
-            className="flex-1" 
-            variant="outline" 
+          <Button
+            className="flex-1"
+            variant="outline"
             onClick={() => updateMatch.mutate({ id: match.id, status: 'rejected' })}
             disabled={updateMatch.isPending}
           >
-            <X className="w-4 h-4 mr-2" /> Skip
+            <X className="w-4 h-4 mr-2" /> {t("matches.skip")}
           </Button>
-          <Button 
-            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground" 
+          <Button
+            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
             onClick={() => updateMatch.mutate({ id: match.id, status: 'active' })}
             disabled={updateMatch.isPending}
           >
-            <Check className="w-4 h-4 mr-2" /> Connect
+            <Check className="w-4 h-4 mr-2" /> {t("matches.connect")}
           </Button>
         </CardFooter>
       )}
-      
+
       {match.status === 'active' && (
         <CardFooter className="p-0 border-t border-green-200 dark:border-green-900/40 bg-green-500/5 flex-col items-stretch">
           <div className="flex items-center gap-2 px-5 py-3 border-b border-green-200/60 dark:border-green-900/30">
             <CheckCircle2 className="w-4 h-4 text-green-600" />
-            <span className="text-sm font-semibold text-green-700 dark:text-green-400">Active Connection — Contact Details</span>
+            <span className="text-sm font-semibold text-green-700 dark:text-green-400">{t("matches.activeConnection")}</span>
           </div>
           <div className="px-5 py-4 space-y-2.5">
             <a

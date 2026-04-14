@@ -10,9 +10,11 @@ import { Sparkles, Activity, Folders } from "lucide-react";
 import { BadgesSection } from "@/components/shared/badges-section";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const { data: matches, isLoading: isLoadingMatches } = useMatches();
   const { data: projects, isLoading: isLoadingProjects } = useProjects();
 
@@ -24,46 +26,43 @@ export default function Dashboard() {
   return (
     <AppLayout>
       <div className="space-y-8">
-        
-        {/* Header Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
           <div>
-            <h1 className="text-3xl font-display font-bold text-foreground">Welcome back, {user.name.split(' ')[0]}!</h1>
-            <p className="text-muted-foreground mt-1 text-lg">Here's your impact overview for today.</p>
+            <h1 className="text-3xl font-display font-bold text-foreground">{t("dashboard.welcome", { name: user.name.split(' ')[0] })}</h1>
+            <p className="text-muted-foreground mt-1 text-lg">{t("dashboard.impactOverview")}</p>
           </div>
           <div className="flex gap-2">
-            <Button asChild variant="outline"><Link href="/projects">Find Projects</Link></Button>
+            <Button asChild variant="outline"><Link href="/projects">{t("dashboard.findProjects")}</Link></Button>
           </div>
         </div>
 
-        {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm font-semibold text-primary/80 uppercase tracking-wider">Your SDGs</p>
+                  <p className="text-sm font-semibold text-primary/80 uppercase tracking-wider">{t("dashboard.yourSDGs")}</p>
                   <p className="text-3xl font-display font-black text-foreground mt-2">{user.sdgs.length}</p>
                 </div>
                 <div className="bg-primary/20 p-3 rounded-xl text-primary"><Activity className="w-5 h-5"/></div>
               </div>
               <div className="flex flex-wrap gap-1.5 mt-4">
                 {user.sdgs.slice(0, 3).map(id => <SDGBadge key={id} id={id} />)}
-                {user.sdgs.length > 3 && <span className="text-xs font-medium text-muted-foreground pt-1">+{user.sdgs.length - 3} more</span>}
+                {user.sdgs.length > 3 && <span className="text-xs font-medium text-muted-foreground pt-1">{t("common.more", { count: user.sdgs.length - 3 })}</span>}
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-gradient-to-br from-secondary/5 to-secondary/10 border-secondary/20">
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm font-semibold text-secondary/80 uppercase tracking-wider">Pending Matches</p>
+                  <p className="text-sm font-semibold text-secondary/80 uppercase tracking-wider">{t("dashboard.pendingMatches")}</p>
                   <p className="text-3xl font-display font-black text-foreground mt-2">{pendingMatches.length}</p>
                 </div>
                 <div className="bg-secondary/20 p-3 rounded-xl text-secondary"><Sparkles className="w-5 h-5"/></div>
               </div>
-              <p className="text-sm text-muted-foreground mt-4 font-medium">Review and connect!</p>
+              <p className="text-sm text-muted-foreground mt-4 font-medium">{t("dashboard.reviewConnect")}</p>
             </CardContent>
           </Card>
 
@@ -71,36 +70,34 @@ export default function Dashboard() {
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm font-semibold text-orange-600/80 uppercase tracking-wider">Active Projects</p>
+                  <p className="text-sm font-semibold text-orange-600/80 uppercase tracking-wider">{t("dashboard.activeProjects")}</p>
                   <p className="text-3xl font-display font-black text-foreground mt-2">{activeProjects.length}</p>
                 </div>
                 <div className="bg-orange-500/20 p-3 rounded-xl text-orange-600"><Folders className="w-5 h-5"/></div>
               </div>
-              <p className="text-sm text-muted-foreground mt-4 font-medium">Collaborating for impact.</p>
+              <p className="text-sm text-muted-foreground mt-4 font-medium">{t("dashboard.collaborating")}</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Badges Widget */}
         <Card className="border-border/50">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-display font-bold">Your Badges</h2>
+              <h2 className="text-lg font-display font-bold">{t("dashboard.yourBadges")}</h2>
               <Button asChild variant="link" className="text-primary text-sm p-0 h-auto">
-                <Link href="/profile">View All</Link>
+                <Link href="/profile">{t("dashboard.viewAll")}</Link>
               </Button>
             </div>
             <BadgesSection userId={user.id} compact />
           </CardContent>
         </Card>
 
-        {/* Pending Matches */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-display font-bold">Top Pending Matches</h2>
-            <Button asChild variant="link" className="text-primary"><Link href="/matches">View All</Link></Button>
+            <h2 className="text-2xl font-display font-bold">{t("dashboard.topPendingMatches")}</h2>
+            <Button asChild variant="link" className="text-primary"><Link href="/matches">{t("dashboard.viewAll")}</Link></Button>
           </div>
-          
+
           {isLoadingMatches ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map(i => <Skeleton key={i} className="h-64 rounded-xl" />)}
@@ -115,20 +112,19 @@ export default function Dashboard() {
             <Card className="border-dashed border-2 bg-transparent">
               <CardContent className="p-12 text-center text-muted-foreground">
                 <Sparkles className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                <p className="text-lg font-medium">No pending matches right now.</p>
-                <p className="text-sm">We'll notify you when we find new synergistic partners.</p>
+                <p className="text-lg font-medium">{t("dashboard.noPendingMatches")}</p>
+                <p className="text-sm">{t("dashboard.noPendingMatchesDesc")}</p>
               </CardContent>
             </Card>
           )}
         </div>
 
-        {/* Active Projects */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-display font-bold">Your Projects</h2>
-            <Button asChild variant="link" className="text-primary"><Link href="/projects">Explore More</Link></Button>
+            <h2 className="text-2xl font-display font-bold">{t("dashboard.yourProjects")}</h2>
+            <Button asChild variant="link" className="text-primary"><Link href="/projects">{t("dashboard.exploreMore")}</Link></Button>
           </div>
-          
+
           {isLoadingProjects ? (
             <div className="grid md:grid-cols-2 gap-6">
               {[1, 2].map(i => <Skeleton key={i} className="h-64 rounded-xl" />)}
@@ -143,13 +139,12 @@ export default function Dashboard() {
             <Card className="border-dashed border-2 bg-transparent">
               <CardContent className="p-12 text-center text-muted-foreground">
                 <Folders className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                <p className="text-lg font-medium">You haven't joined any projects yet.</p>
-                <Button asChild variant="outline" className="mt-4"><Link href="/projects">Find a Project</Link></Button>
+                <p className="text-lg font-medium">{t("dashboard.noProjects")}</p>
+                <Button asChild variant="outline" className="mt-4"><Link href="/projects">{t("dashboard.findProject")}</Link></Button>
               </CardContent>
             </Card>
           )}
         </div>
-
       </div>
     </AppLayout>
   );

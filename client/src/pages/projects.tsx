@@ -17,6 +17,7 @@ import { SDG_DATA } from "@/lib/sdgs";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "react-i18next";
 
 const HELP_TYPE_OPTIONS = ["Technical", "Funding", "Mentorship", "Volunteers", "Marketing", "Legal"];
 
@@ -28,6 +29,7 @@ const formSchema = insertProjectSchema.omit({ ownerId: true, members: true }).ex
 type FormValues = z.infer<typeof formSchema>;
 
 export default function ProjectsPage() {
+  const { t } = useTranslation();
   const { data: projects, isLoading } = useProjects();
   const createProject = useCreateProject();
   const { user } = useAuth();
@@ -82,47 +84,45 @@ export default function ProjectsPage() {
         <div>
           <h1 className="text-3xl font-display font-bold text-foreground flex items-center gap-3">
             <Briefcase className="w-8 h-8 text-primary" />
-            Projects Board
+            {t("projects.title")}
           </h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            Join initiatives, offer your expertise, or launch your own project.
-          </p>
+          <p className="text-muted-foreground mt-2 text-lg">{t("projects.subtitle")}</p>
         </div>
 
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button className="bg-primary hover:bg-primary/90">
-              <Plus className="w-5 h-5 mr-2" /> Create Project
+              <Plus className="w-5 h-5 mr-2" /> {t("projects.createProject")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="font-display text-2xl">Create New Project</DialogTitle>
+              <DialogTitle className="font-display text-2xl">{t("projects.createTitle")}</DialogTitle>
             </DialogHeader>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4">
               <div className="space-y-2">
-                <Label>Project Title</Label>
-                <Input {...form.register("title")} placeholder="E.g. Clean River Initiative" data-testid="input-project-title" />
+                <Label>{t("projects.projectTitle")}</Label>
+                <Input {...form.register("title")} placeholder={t("projects.projectTitlePlaceholder")} data-testid="input-project-title" />
               </div>
 
               <div className="space-y-2">
-                <Label>Description</Label>
-                <Textarea {...form.register("description")} placeholder="What is the goal of this project?" rows={4} data-testid="input-project-description" />
+                <Label>{t("projects.description")}</Label>
+                <Textarea {...form.register("description")} placeholder={t("projects.descriptionPlaceholder")} rows={4} data-testid="input-project-description" />
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Resources Needed</Label>
-                  <Input {...form.register("resourcesNeeded")} placeholder="E.g. Funding, Volunteers, Devs" />
+                  <Label>{t("projects.resourcesNeeded")}</Label>
+                  <Input {...form.register("resourcesNeeded")} placeholder={t("projects.resourcesNeededPlaceholder")} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Resources Offered</Label>
-                  <Input {...form.register("resourcesOffered")} placeholder="E.g. Mentorship, Network, Tools" />
+                  <Label>{t("projects.resourcesOffered")}</Label>
+                  <Input {...form.register("resourcesOffered")} placeholder={t("projects.resourcesOfferedPlaceholder")} />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Target SDGs</Label>
+                <Label>{t("projects.targetSDGs")}</Label>
                 <div className="flex flex-wrap gap-2 p-4 bg-muted/30 rounded-xl border border-border">
                   {SDG_DATA.map(sdg => (
                     <Badge
@@ -142,15 +142,14 @@ export default function ProjectsPage() {
                 </div>
               </div>
 
-              {/* Help Wanted Toggle */}
               <div className="rounded-xl border border-border p-4 bg-orange-50/50 dark:bg-orange-900/10 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <Label className="text-base font-semibold flex items-center gap-2">
                       <HandHeart className="w-4 h-4 text-orange-600" />
-                      This project needs help
+                      {t("projects.needsHelp")}
                     </Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">Let others know you're looking for contributors</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{t("projects.needsHelpDesc")}</p>
                   </div>
                   <Switch
                     data-testid="toggle-help-needed"
@@ -161,7 +160,7 @@ export default function ProjectsPage() {
 
                 {helpNeeded && (
                   <div className="space-y-2">
-                    <Label className="text-sm">What kind of help do you need?</Label>
+                    <Label className="text-sm">{t("projects.whatHelp")}</Label>
                     <div className="flex flex-wrap gap-2">
                       {HELP_TYPE_OPTIONS.map(type => (
                         <Badge
@@ -183,7 +182,7 @@ export default function ProjectsPage() {
 
               <div className="pt-4 border-t flex justify-end">
                 <Button data-testid="button-launch-project" type="submit" size="lg" disabled={createProject.isPending}>
-                  {createProject.isPending ? "Creating..." : "Launch Project"}
+                  {createProject.isPending ? t("projects.launching") : t("projects.launch")}
                 </Button>
               </div>
             </form>
@@ -194,18 +193,17 @@ export default function ProjectsPage() {
       <Tabs defaultValue="mine">
         <TabsList className="mb-6">
           <TabsTrigger value="all" className="flex items-center gap-1.5" data-testid="tab-all-projects">
-            <LayoutGrid className="w-4 h-4" /> All Projects ({allProjects.length})
+            <LayoutGrid className="w-4 h-4" /> {t("projects.tabAll")} ({allProjects.length})
           </TabsTrigger>
           <TabsTrigger value="help" className="flex items-center gap-1.5" data-testid="tab-help-wanted">
             <HandHeart className="w-4 h-4 text-orange-500" />
-            Help Wanted ({helpWantedProjects.length})
+            {t("projects.tabHelp")} ({helpWantedProjects.length})
           </TabsTrigger>
           <TabsTrigger value="mine" className="flex items-center gap-1.5" data-testid="tab-my-projects">
-            <UserCircle className="w-4 h-4" /> My Projects ({myProjects.length})
+            <UserCircle className="w-4 h-4" /> {t("projects.tabMine")} ({myProjects.length})
           </TabsTrigger>
         </TabsList>
 
-        {/* All Projects */}
         <TabsContent value="all" className="mt-0">
           {isLoading ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
@@ -216,19 +214,16 @@ export default function ProjectsPage() {
               {allProjects.map(project => <ProjectCard key={project.id} project={project} />)}
             </div>
           ) : (
-            <EmptyState message="No projects yet. Be the first to start one!" />
+            <EmptyState message={t("projects.noAllProjects")} />
           )}
         </TabsContent>
 
-        {/* Help Wanted */}
         <TabsContent value="help" className="mt-0">
           <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-900/10 rounded-xl border border-orange-200 dark:border-orange-800 flex items-start gap-3">
             <HandHeart className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-semibold text-orange-800 dark:text-orange-300">Offer your expertise</p>
-              <p className="text-xs text-orange-600 dark:text-orange-400 mt-0.5">
-                These projects are actively looking for contributors — technical help, mentorship, funding, volunteers and more.
-              </p>
+              <p className="text-sm font-semibold text-orange-800 dark:text-orange-300">{t("projects.offerExpertise")}</p>
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-0.5">{t("projects.offerExpertiseDesc")}</p>
             </div>
           </div>
           {isLoading ? (
@@ -240,11 +235,10 @@ export default function ProjectsPage() {
               {helpWantedProjects.map(project => <ProjectCard key={project.id} project={project} />)}
             </div>
           ) : (
-            <EmptyState message="No projects need help right now. Check back soon!" />
+            <EmptyState message={t("projects.noHelpProjects")} />
           )}
         </TabsContent>
 
-        {/* My Projects */}
         <TabsContent value="mine" className="mt-0">
           {isLoading ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
@@ -257,12 +251,10 @@ export default function ProjectsPage() {
           ) : (
             <div className="text-center py-20 bg-muted/20 rounded-xl border border-dashed border-border">
               <Briefcase className="w-10 h-10 mx-auto mb-3 opacity-30 text-muted-foreground" />
-              <p className="font-semibold text-foreground text-lg mb-1">No projects yet</p>
-              <p className="text-muted-foreground text-sm mb-6 max-w-xs mx-auto">
-                Launch your own project and let the community know what kind of help you need — volunteers, funding, mentors, and more.
-              </p>
+              <p className="font-semibold text-foreground text-lg mb-1">{t("projects.noMyProjectsTitle")}</p>
+              <p className="text-muted-foreground text-sm mb-6 max-w-xs mx-auto">{t("projects.noMyProjectsDesc")}</p>
               <Button onClick={() => setOpen(true)} className="gap-2" data-testid="button-create-first-project">
-                <Plus className="w-4 h-4" /> Create Your First Project
+                <Plus className="w-4 h-4" /> {t("projects.createFirstProject")}
               </Button>
             </div>
           )}

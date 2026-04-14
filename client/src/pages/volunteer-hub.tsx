@@ -94,6 +94,7 @@ function getAllCertificates(userId?: number): AllCert[] {
 }
 
 function CertCard({ cert, onView }: { cert: AllCert; onView: (certId: string) => void }) {
+  const { t } = useTranslation();
   return (
     <Card className="border border-amber-200 dark:border-amber-800 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-card hover-elevate" data-testid={`card-cert-${cert.certId}`}>
       <CardContent className="p-5">
@@ -106,32 +107,32 @@ function CertCard({ cert, onView }: { cert: AllCert; onView: (certId: string) =>
             <p className="text-sm text-primary font-medium">{cert.ngoName}</p>
           </div>
           <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 text-xs shrink-0">
-            <CheckCircle2 className="w-3 h-3 mr-1" /> Completed
+            <CheckCircle2 className="w-3 h-3 mr-1" /> {t("status.completed")}
           </Badge>
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-4">
           <div className="bg-muted/40 rounded-lg p-2">
-            <p className="font-semibold uppercase tracking-wider mb-0.5">Volunteer</p>
+            <p className="font-semibold uppercase tracking-wider mb-0.5">{t("common.volunteer")}</p>
             <p className="font-medium text-foreground">{cert.volunteerName}</p>
           </div>
           <div className="bg-muted/40 rounded-lg p-2">
-            <p className="font-semibold uppercase tracking-wider mb-0.5">Issued On</p>
+            <p className="font-semibold uppercase tracking-wider mb-0.5">{t("volunteerDashboard.completedOn")}</p>
             <p className="font-medium text-foreground">{cert.issueDate}</p>
           </div>
           <div className="bg-muted/40 rounded-lg p-2">
-            <p className="font-semibold uppercase tracking-wider mb-0.5">Start</p>
+            <p className="font-semibold uppercase tracking-wider mb-0.5">{t("certificate.from")}</p>
             <p className="font-medium text-foreground">{cert.startDate}</p>
           </div>
           <div className="bg-muted/40 rounded-lg p-2">
-            <p className="font-semibold uppercase tracking-wider mb-0.5">End</p>
+            <p className="font-semibold uppercase tracking-wider mb-0.5">{t("certificate.to")}</p>
             <p className="font-medium text-foreground">{cert.endDate}</p>
           </div>
         </div>
 
         <div className="flex gap-2">
           <Button className="flex-1 bg-amber-600 hover:bg-amber-700 text-white" onClick={() => onView(cert.certId)} data-testid={`button-view-cert-${cert.certId}`}>
-            <FileText className="w-4 h-4 mr-1.5" /> View Certificate
+            <FileText className="w-4 h-4 mr-1.5" /> {t("volunteerDashboard.viewCertificate")}
           </Button>
         </div>
 
@@ -156,14 +157,14 @@ function RecordCard({ record, onMarkComplete, onViewCert }: {
               <h3 className="font-bold text-foreground">{record.projectName}</h3>
               {record.status === "completed" ? (
                 <Badge className="bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300 text-xs">
-                  <CheckCircle2 className="w-3 h-3 mr-1" /> Completed
+                  <CheckCircle2 className="w-3 h-3 mr-1" /> {t("status.completed")}
                 </Badge>
               ) : (
-                <Badge variant="secondary" className="text-xs"><Clock className="w-3 h-3 mr-1" /> In Progress</Badge>
+                <Badge variant="secondary" className="text-xs"><Clock className="w-3 h-3 mr-1" /> {t("status.inProgress")}</Badge>
               )}
               {record.certificateEligible && (
                 <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 text-xs border-amber-200">
-                  <Award className="w-3 h-3 mr-1" /> Certificate Eligible
+                  <Award className="w-3 h-3 mr-1" /> {t("status.certificateEligible")}
                 </Badge>
               )}
             </div>
@@ -174,13 +175,13 @@ function RecordCard({ record, onMarkComplete, onViewCert }: {
 
         <div className="grid grid-cols-2 gap-2 text-sm mb-4">
           <div className="bg-muted/40 rounded-lg p-2.5">
-            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-0.5"><CalendarDays className="w-3 h-3 inline mr-1" />Period</p>
+            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-0.5"><CalendarDays className="w-3 h-3 inline mr-1" />{t("volunteerDashboard.period")}</p>
             <p className="font-medium text-foreground text-xs">
               {record.startDate ? format(new Date(record.startDate), "dd MMM yy") : "—"} → {record.endDate ? format(new Date(record.endDate), "dd MMM yy") : "—"}
             </p>
           </div>
           <div className="bg-muted/40 rounded-lg p-2.5">
-            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-0.5">Applied</p>
+            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-0.5">{t("volunteerDashboard.appliedOn")}</p>
             <p className="font-medium text-foreground text-xs">{formatDistanceToNow(new Date(record.appliedAt), { addSuffix: true })}</p>
           </div>
         </div>
@@ -188,14 +189,14 @@ function RecordCard({ record, onMarkComplete, onViewCert }: {
         <div className="flex gap-2">
           {record.status === "pending" ? (
             <Button className="flex-1" onClick={() => onMarkComplete(record)} data-testid={`button-complete-${record.id}`}>
-              <CheckCircle2 className="w-4 h-4 mr-2" /> Mark Completed
+              <CheckCircle2 className="w-4 h-4 mr-2" /> {t("volunteerDashboard.markCompleted")}
             </Button>
           ) : record.certificateEligible && record.certId ? (
             <Button className="flex-1 bg-amber-600 hover:bg-amber-700 text-white" onClick={() => onViewCert(record.certId!)} data-testid={`button-certificate-${record.id}`}>
-              <Award className="w-4 h-4 mr-2" /> View Certificate
+              <Award className="w-4 h-4 mr-2" /> {t("volunteerDashboard.viewCertificate")}
             </Button>
           ) : record.status === "completed" ? (
-            <p className="text-xs text-muted-foreground italic py-2">Completed · Certificate pending NGO confirmation</p>
+            <p className="text-xs text-muted-foreground italic py-2">{t("status.completed")} · {t("volunteerDashboard.noCertificatesDesc")}</p>
           ) : null}
         </div>
       </CardContent>
@@ -313,9 +314,9 @@ export default function VolunteerHubPage() {
           </div>
           <div className="flex gap-4 text-sm">
             {[
-              { label: "Applications", value: records.length, color: "text-foreground" },
-              { label: "Completed", value: completed.length, color: "text-green-600" },
-              { label: "Certificates", value: allCerts.length, color: "text-amber-600" },
+              { label: t("volunteerDashboard.tabApplications"), value: records.length, color: "text-foreground" },
+              { label: t("status.completed"), value: completed.length, color: "text-green-600" },
+              { label: t("volunteerDashboard.tabCertificates"), value: allCerts.length, color: "text-amber-600" },
             ].map((s, i) => (
               <div key={i} className={`text-center ${i > 0 ? "border-l border-border pl-4" : ""}`}>
                 <p className={`text-2xl font-black font-display ${s.color}`}>{s.value}</p>
@@ -332,14 +333,14 @@ export default function VolunteerHubPage() {
             className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border-b-2 transition-all ${activeTab === "applications" ? "border-primary text-primary bg-primary/5" : "border-transparent text-muted-foreground hover:text-foreground"}`}
             data-testid="tab-applications"
           >
-            <HandHeart className="w-4 h-4 inline mr-1.5" />Applications ({records.length})
+            <HandHeart className="w-4 h-4 inline mr-1.5" />{t("volunteerDashboard.tabApplications")} ({records.length})
           </button>
           <button
             onClick={() => setActiveTab("certificates")}
             className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border-b-2 transition-all flex items-center gap-1.5 ${activeTab === "certificates" ? "border-amber-500 text-amber-600 bg-amber-50 dark:bg-amber-950/20" : "border-transparent text-muted-foreground hover:text-foreground"}`}
             data-testid="tab-certificates"
           >
-            <Award className="w-4 h-4" />Certificates
+            <Award className="w-4 h-4" />{t("volunteerDashboard.tabCertificates")}
             {allCerts.length > 0 && (
               <span className="ml-1 bg-amber-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{allCerts.length}</span>
             )}
