@@ -884,5 +884,68 @@ Keep responses under 150 words unless explaining an SDG in depth. Use bullet poi
     }
   });
 
+  // ─── Submission status notification email ────────────────────────────────
+  app.post('/api/submissions/notify', async (req, res) => {
+    const { email, applicantName, projectName, ngoName, status, helpCategory, certId } = req.body;
+
+    if (!email || !applicantName || !status) {
+      return res.status(400).json({ message: "email, applicantName, and status are required" });
+    }
+
+    const appUrl = req.headers.origin || "https://sdgsynergy.replit.app";
+
+    type StatusConfig = { subject: string; title: string; message: string; cta: string; ctaUrl: string };
+    const statusConfigs: Record<string, StatusConfig> = {
+      reviewed: {
+        subject: `Your application is being reviewed – ${projectName}`,
+        title: "Application Under Review",
+        message: `Hi ${applicantName},<br><br>Your <strong>${helpCategory || "help"}</strong> application for <strong>${projectName}</strong> (${ngoName}) is currently being reviewed by the project team.<br><br>We'll update you soon with next steps.`,
+        cta: "View Volunteer Hub",
+        ctaUrl: `${appUrl}/volunteer-hub`,
+      },
+      contacted: {
+        subject: `${ngoName} wants to connect with you! – ${projectName}`,
+        title: "They Want to Connect!",
+        message: `Hi ${applicantName},<br><br><strong>${ngoName}</strong> has reviewed your application for <strong>${projectName}</strong> and would like to get in touch with you.<br><br>Please check your email or phone for their message, or log in to your volunteer hub to see the next steps.`,
+        cta: "Check Volunteer Hub",
+        ctaUrl: `${appUrl}/volunteer-hub`,
+      },
+      approved: {
+        subject: `🎉 You've been accepted! – ${projectName}`,
+        title: "Application Approved!",
+        message: `Hi ${applicantName},<br><br>Congratulations! <strong>${ngoName}</strong> has officially accepted your <strong>${helpCategory || "help"}</strong> offer for <strong>${projectName}</strong>.<br><br>Please coordinate with the project team on next steps. Your contribution will make a real difference toward the Sustainable Development Goals.`,
+        cta: "View My Applications",
+        ctaUrl: `${appUrl}/volunteer-hub`,
+      },
+      rejected: {
+        subject: `Update on your application – ${projectName}`,
+        title: "Application Update",
+        message: `Hi ${applicantName},<br><br>Thank you for offering to help with <strong>${projectName}</strong> at <strong>${ngoName}</strong>.<br><br>Unfortunately, the project team was unable to proceed with your application at this time. This may be because they have found other contributors or their needs have changed.<br><br>We encourage you to explore other opportunities on SDG Synergy.`,
+        cta: "Find More Projects",
+        ctaUrl: `${appUrl}/ngos`,
+      },
+      completed: {
+        subject: `✅ Volunteering completed – Your certificate is ready!`,
+        title: "Volunteering Marked as Completed",
+        message: `Hi ${applicantName},<br><br>Congratulations on completing your <strong>${helpCategory || "volunteering"}</strong> contribution to <strong>${projectName}</strong> at <strong>${ngoName}</strong>!<br><br>${certId ? `Your <strong>Certificate of Appreciation</strong> is now ready. Use the button below to view and download it.` : `Your contribution has been recorded. Log in to your Volunteer Hub to see your completed submissions.`}<br><br>Thank you for your commitment to social impact and the UN Sustainable Development Goals.`,
+        cta: certId ? "Download Certificate" : "View Volunteer Hub",
+        ctaUrl: certId ? `${appUrl}/certificate/${certId}` : `${appUrl}/volunteer-hub`,
+      },
+    };
+
+    const config = statusConfigs[status];
+    if (!config) {
+      return res.status(200).json({ message: "No email needed for this status", sent: false });
+    }
+
+    try {
+      const sent = await sendNotificationEmail(email, config.subject, config.title, config.message, config.cta, config.ctaUrl);
+      res.json({ sent, status });
+    } catch (err) {
+      console.error("Submission notify error:", err);
+      res.status(500).json({ message: "Failed to send notification", sent: false });
+    }
+  });
+
   return httpServer;
 }

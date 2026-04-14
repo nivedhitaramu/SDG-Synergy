@@ -136,16 +136,55 @@ function SubmissionDetailModal({
   if (!sub) return null;
 
   const cert = getCertificateForSubmission(sub.id);
+  const EMAIL_STATUSES: SubmissionStatus[] = ["reviewed", "contacted", "approved", "rejected", "completed"];
 
-  function handleStatusChange(status: SubmissionStatus) {
+  async function handleStatusChange(status: SubmissionStatus) {
     if (!sub) return;
     setUpdatingStatus(true);
     const generatedCert = updateSubmissionStatus(sub.id, status);
-    if (status === "completed" && isCertificateEligible(sub)) {
-      toast({ title: "Marked Completed", description: generatedCert ? "Certificate generated! Volunteer can view it in their hub." : "Status updated." });
-    } else {
-      toast({ title: "Status Updated", description: `Submission marked as ${status}.` });
+
+    const shouldEmail = EMAIL_STATUSES.includes(status) && !!sub.applicantEmail;
+
+    if (shouldEmail) {
+      try {
+        await fetch("/api/submissions/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: sub.applicantEmail,
+            applicantName: sub.applicantName,
+            projectName: sub.projectName,
+            ngoName: sub.ngoName,
+            status,
+            helpCategory: sub.helpCategory,
+            certId: generatedCert?.certId || cert?.certId || undefined,
+          }),
+        });
+      } catch { /* email failure is non-blocking */ }
     }
+
+    const statusLabels: Record<string, string> = {
+      reviewed: "Application marked as reviewed.",
+      contacted: "Marked as contacted.",
+      approved: "Application approved!",
+      rejected: "Application rejected.",
+      completed: "Marked as completed.",
+      new: "Status reset to new.",
+    };
+
+    const emailNote = shouldEmail ? " Notification email sent to applicant." : "";
+
+    if (status === "completed" && isCertificateEligible(sub)) {
+      toast({
+        title: "Marked Completed",
+        description: (generatedCert ? "Certificate generated for volunteer." : "Status updated.") + emailNote,
+      });
+    } else if (status === "approved") {
+      toast({ title: "🎉 Application Approved!", description: `${sub.applicantName} has been accepted.${emailNote}` });
+    } else {
+      toast({ title: "Status Updated", description: (statusLabels[status] || `Marked as ${status}.`) + emailNote });
+    }
+
     setUpdatingStatus(false);
     onStatusChange();
   }
@@ -263,6 +302,37 @@ function SubmissionDetailModal({
             </div>
           </div>
 
+          {/* Source badge */}
+          {sub.sourceForm && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className="font-semibold uppercase tracking-wider">Source:</span>
+              <span className="bg-muted px-2 py-0.5 rounded font-medium text-foreground">{sub.sourceForm}</span>
+            </div>
+          )}
+
+          {/* Quick Accept / Reject CTA for actionable statuses */}
+          {(sub.status === "new" || sub.status === "reviewed" || sub.status === "contacted") && (
+            <div className="flex gap-2">
+              <Button
+                className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => handleStatusChange("approved")}
+                disabled={updatingStatus}
+                data-testid="button-quick-approve"
+              >
+                <CheckCircle2 className="w-4 h-4 mr-1.5" /> Accept Application
+              </Button>
+              <Button
+                className="flex-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 dark:bg-red-950/20 dark:hover:bg-red-950/40 dark:text-red-400 dark:border-red-800"
+                variant="outline"
+                onClick={() => handleStatusChange("rejected")}
+                disabled={updatingStatus}
+                data-testid="button-quick-reject"
+              >
+                <X className="w-4 h-4 mr-1.5" /> Decline
+              </Button>
+            </div>
+          )}
+
           {/* Status controls */}
           <div>
             <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-2">Update Status</p>
@@ -282,6 +352,7 @@ function SubmissionDetailModal({
                 </button>
               ))}
             </div>
+            <p className="text-xs text-muted-foreground mt-1.5">Changing status sends an email notification to the applicant.</p>
           </div>
 
           {/* Certificate actions */}
@@ -511,9 +582,18 @@ export default function SubmissionsPage() {
                         <span className="text-xs bg-muted px-2 py-1 rounded font-medium">
                           {SUBMISSION_TYPE_LABELS[sub.submissionType]}
                         </span>
-                        {sub.certificateEligible && (
-                          <Award className="w-3.5 h-3.5 text-amber-500 mt-1" title="Certificate eligible" />
-                        )}
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className={`text-xs px-1.5 py-0.5 rounded font-semibold ${
+                            sub.sourceForm?.includes("Projects Dashboard")
+                              ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300"
+                              : "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300"
+                          }`}>
+                            {sub.sourceForm?.includes("Projects Dashboard") ? "Project" : "NGO Hub"}
+                          </span>
+                          {sub.certificateEligible && (
+                            <Award className="w-3.5 h-3.5 text-amber-500" title="Certificate eligible" />
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <p className="font-medium text-foreground">{sub.ngoName}</p>
