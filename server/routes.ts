@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import type { Server } from "http";
+import fs from "fs";
+import path from "path";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
@@ -375,6 +377,13 @@ export async function registerRoutes(
     saveUninitialized: false,
     cookie: { secure: false }
   }));
+
+  // Serve the offline demo presentation directly
+  app.get("/presentation.html", (_req, res) => {
+    const filePath = path.resolve(import.meta.dirname, "..", "client", "public", "presentation.html");
+    res.setHeader("Content-Type", "text/html");
+    res.sendFile(filePath);
+  });
 
   // Seed DB
   seedDatabase().catch(console.error);
