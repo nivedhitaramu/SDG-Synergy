@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SDG Synergy — Demo Presentation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  :root {
+    --sdg1:#E5243B; --sdg2:#DDA63A; --sdg3:#4C9F38; --sdg4:#C5192D; --sdg5:#FF3A21;
+    --sdg6:#26BDE2; --sdg7:#FCC30B; --sdg8:#A21942; --sdg9:#FD6925; --sdg10:#DD1367;
+    --sdg11:#FD9D24; --sdg12:#BF8B2E; --sdg13:#3F7E44; --sdg14:#0A97D9; --sdg15:#56C02B;
+    --sdg16:#00689D; --sdg17:#19486A;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background: #0a0e1a;
+    color: #f0f4ff;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  .deck { width: 100%; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    padding: 48px 64px;
+    background: #0a0e1a;
+    animation: fadeIn .35s ease;
+  }
+  .slide.active { display: flex; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform:none; } }
+
+  /* ── common typography ─────────────────────── */
+  .tag {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+    padding: 4px 14px; border-radius: 99px;
+    background: rgba(99,179,237,.15); color: #63b3ed; margin-bottom: 20px;
+    display: inline-block;
+  }
+  h1 { font-size: 56px; font-weight: 900; line-height: 1.05; text-align: center; margin-bottom: 20px; }
+  h2 { font-size: 38px; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+  h3 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  p  { font-size: 17px; font-weight: 400; line-height: 1.65; color: #b0bcd4; max-width: 760px; text-align: center; }
+  .left p { text-align: left; }
+  .muted { color: #6b7fa3; font-size: 14px; }
+
+  /* ── hero gradient words ───────────────────── */
+  .grad { background: linear-gradient(90deg,#38f9d7,#43e0ff,#7f7fff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .grad2 { background: linear-gradient(90deg,#f9d423,#f83600); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+  /* ── card grid ─────────────────────────────── */
+  .grid { display: grid; gap: 18px; width: 100%; max-width: 1060px; margin-top: 32px; }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .g3 { grid-template-columns: 1fr 1fr 1fr; }
+  .g4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  .card {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px;
+    padding: 24px 22px;
+    position: relative; overflow: hidden;
+  }
+  .card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background: var(--accent, linear-gradient(90deg,#38f9d7,#43e0ff));
+  }
+  .card .icon { font-size: 32px; margin-bottom: 12px; }
+  .card h3 { font-size: 16px; margin-bottom: 6px; color: #e2e8f0; }
+  .card p  { font-size: 13.5px; color: #8090a8; text-align: left; max-width: 100%; line-height: 1.55; }
+
+  /* ── flow steps ────────────────────────────── */
+  .steps { display: flex; gap: 0; align-items: flex-start; width: 100%; max-width: 960px; margin-top: 32px; }
+  .step { flex:1; text-align:center; position:relative; padding: 0 10px; }
+  .step:not(:last-child)::after {
+    content:'→'; position:absolute; right:-12px; top:18px; font-size:22px; color:#38f9d7;
+  }
+  .step .num {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: linear-gradient(135deg,#38f9d7,#43e0ff);
+    color: #0a0e1a; font-weight: 800; font-size: 20px;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 12px;
+  }
+  .step h3 { font-size: 14px; color: #e2e8f0; margin-bottom: 6px; }
+  .step p  { font-size: 12px; color: #7a8ca8; text-align: center; max-width: 100%; }
+
+  /* ── SDG pill row ──────────────────────────── */
+  .sdg-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; justify-content: center; }
+  .sdg-pill {
+    padding: 5px 14px; border-radius: 99px; font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+    color: #e2e8f0;
+  }
+
+  /* ── bottom nav ────────────────────────────── */
+  .nav {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 16px;
+    background: rgba(15,20,40,.85); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.1);
+    border-radius: 99px; padding: 10px 24px;
+  }
+  .nav button {
+    background: none; border: none; color: #e2e8f0; font-size: 18px;
+    cursor: pointer; padding: 4px 10px; border-radius: 8px; transition:.2s;
+  }
+  .nav button:hover { background: rgba(255,255,255,.1); }
+  .nav .counter { font-size: 13px; color: #6b7fa3; min-width: 60px; text-align: center; }
+  .nav .dots { display:flex; gap:5px; }
+  .nav .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.2); transition:.3s;
+  }
+  .nav .dot.on { background: #38f9d7; }
+
+  /* ── slide-specific helpers ────────────────── */
+  .two-col { display:grid; grid-template-columns:1fr 1fr; gap:40px; width:100%; max-width:1000px; margin-top:24px; align-items:start; }
+  .two-col .left { text-align:left; }
+  .bullet { display:flex; align-items:flex-start; gap:10px; margin-bottom:12px; }
+  .bullet .dot2 { width:8px; height:8px; min-width:8px; border-radius:50%; margin-top:7px; }
+  .bullet p { font-size: 15px; text-align:left; max-width:100%; color:#b0bcd4; }
+
+  .big-stat { font-size: 64px; font-weight: 900; line-height:1; }
+  .stat-row { display:flex; gap:48px; margin-top: 32px; }
+  .stat-item { text-align:center; }
+  .stat-item .label { font-size:14px; color:#6b7fa3; margin-top: 6px; }
+
+  /* SDG color bar */
+  .sdg-bar { display:flex; height: 10px; border-radius: 99px; overflow:hidden; width:100%; max-width:700px; margin:20px auto 0; }
+  .sdg-bar div { flex:1; }
+
+  /* tech stack pills */
+  .tech-grid { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:28px; }
+  .tech-pill {
+    padding: 8px 18px; border-radius: 10px; font-size: 14px; font-weight: 600;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.1); color: #e2e8f0;
+  }
+
+  /* demo cred box */
+  .cred-box {
+    background: rgba(56,249,215,.06); border: 1px solid rgba(56,249,215,.2);
+    border-radius: 14px; padding: 20px 32px; margin-top: 28px; width: 100%; max-width: 560px;
+    font-family: monospace; font-size: 15px; color: #38f9d7; line-height: 2;
+  }
+
+  .highlight-box {
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09);
+    border-radius: 14px; padding: 22px 28px; width: 100%; max-width: 860px; margin-top: 28px;
+  }
+
+  /* title slide */
+  .title-slide { background: radial-gradient(ellipse at 40% 30%, rgba(56,249,215,.08) 0%, transparent 60%), radial-gradient(ellipse at 70% 70%, rgba(67,224,255,.06) 0%, transparent 60%), #0a0e1a; }
+  .title-slide h1 { font-size: 72px; }
+  .subtitle { font-size: 20px; color: #8090b8; margin-top: 12px; }
+  .globe { font-size: 80px; margin-bottom: 16px; }
+
+  /* end slide */
+  .end-slide { background: radial-gradient(ellipse at 50% 40%, rgba(56,249,215,.1) 0%, transparent 60%), #0a0e1a; }
+
+  /* agenda dot */
+  .agenda-item {
+    display:flex; align-items:center; gap:14px; padding:10px 0;
+    border-bottom: 1px solid rgba(255,255,255,.06); font-size:15px; color:#b0bcd4;
+  }
+  .agenda-item .num2 { font-size:12px; font-weight:700; color:#38f9d7; min-width:22px; }
+  .agenda-item:last-child { border-bottom: none; }
+
+  .full-w { width:100%; max-width:900px; }
+  .center { text-align:center; }
+  .mt { margin-top: 28px; }
+
+  /* NGO mini cards */
+  .ngo-chip {
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.09);
+    border-radius: 10px; padding: 8px 14px; font-size: 13px; color: #c8d4e8;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 1 — TITLE
+══════════════════════════════════════════════ -->
+<div class="slide title-slide active" id="s1">
+  <div class="globe">🌏</div>
+  <div class="tag">Demo Presentation · April 2026</div>
+  <h1><span class="grad">SDG Synergy</span></h1>
+  <p class="subtitle">A fullstack sustainability networking platform<br>connecting people & organizations through UN Sustainable Development Goals</p>
+  <div class="sdg-bar mt" style="margin-top:36px;">
+    <div style="background:var(--sdg1)"></div><div style="background:var(--sdg2)"></div>
+    <div style="background:var(--sdg3)"></div><div style="background:var(--sdg4)"></div>
+    <div style="background:var(--sdg5)"></div><div style="background:var(--sdg6)"></div>
+    <div style="background:var(--sdg7)"></div><div style="background:var(--sdg8)"></div>
+    <div style="background:var(--sdg9)"></div><div style="background:var(--sdg10)"></div>
+    <div style="background:var(--sdg11)"></div><div style="background:var(--sdg12)"></div>
+    <div style="background:var(--sdg13)"></div><div style="background:var(--sdg14)"></div>
+    <div style="background:var(--sdg15)"></div><div style="background:var(--sdg16)"></div>
+    <div style="background:var(--sdg17)"></div>
+  </div>
+  <p class="muted" style="margin-top:14px;">17 UN Sustainable Development Goals · Built for India</p>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 2 — AGENDA
+══════════════════════════════════════════════ -->
+<div class="slide" id="s2">
+  <div class="tag">What We'll Cover</div>
+  <h2>Demo <span class="grad">Agenda</span></h2>
+  <div class="highlight-box" style="max-width:640px;">
+    <div class="agenda-item"><span class="num2">01</span> Problem Statement & Platform Overview</div>
+    <div class="agenda-item"><span class="num2">02</span> Registration & OTP Email Verification</div>
+    <div class="agenda-item"><span class="num2">03</span> SDG Explorer — All 17 Goals</div>
+    <div class="agenda-item"><span class="num2">04</span> AI-Powered Matchmaking</div>
+    <div class="agenda-item"><span class="num2">05</span> SDG Impact Feed</div>
+    <div class="agenda-item"><span class="num2">06</span> Help Wanted Projects + Mock Payment</div>
+    <div class="agenda-item"><span class="num2">07</span> SDG Events</div>
+    <div class="agenda-item"><span class="num2">08</span> NGO Directory — 14 NGOs</div>
+    <div class="agenda-item"><span class="num2">09</span> Volunteer Hub & Certificates</div>
+    <div class="agenda-item"><span class="num2">10</span> Admin Dashboard & Notifications</div>
+    <div class="agenda-item"><span class="num2">11</span> Dark Mode · Multilingual · AI Chatbot</div>
+    <div class="agenda-item"><span class="num2">12</span> Tech Stack & Architecture</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 3 — PROBLEM STATEMENT
+══════════════════════════════════════════════ -->
+<div class="slide" id="s3">
+  <div class="tag">Problem Statement</div>
+  <h2>The <span class="grad2">Gap</span> We're Solving</h2>
+  <div class="grid g3" style="max-width:900px;">
+    <div class="card" style="--accent:var(--sdg4)">
+      <div class="icon">🧩</div>
+      <h3>Fragmented Ecosystem</h3>
+      <p>NGOs, businesses, and volunteers working on the same SDGs have no structured way to find each other and collaborate.</p>
+    </div>
+    <div class="card" style="--accent:var(--sdg13)">
+      <div class="icon">🔗</div>
+      <h3>No SDG-First Matching</h3>
+      <p>Existing platforms focus on networking by industry or geography — not by shared sustainability goals and values.</p>
+    </div>
+    <div class="card" style="--accent:var(--sdg8)">
+      <div class="icon">📊</div>
+      <h3>Invisible Impact</h3>
+      <p>Volunteer contributions, project outcomes, and collaboration history are siloed with no unified impact feed or certificate trail.</p>
+    </div>
+  </div>
+  <div class="highlight-box" style="margin-top:28px; text-align:center;">
+    <p style="text-align:center; font-size:16px;">
+      <strong style="color:#38f9d7;">SDG Synergy</strong> is the first platform built ground-up around the 17 UN SDGs —<br>
+      connecting people through shared purpose, AI matchmaking, and verifiable volunteer certificates.
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 4 — PLATFORM AT A GLANCE (stats)
+══════════════════════════════════════════════ -->
+<div class="slide" id="s4">
+  <div class="tag">Platform Overview</div>
+  <h2>SDG Synergy <span class="grad">at a Glance</span></h2>
+  <div class="stat-row">
+    <div class="stat-item"><div class="big-stat grad">17</div><div class="label">UN SDGs Covered</div></div>
+    <div class="stat-item"><div class="big-stat" style="color:#f9d423;">14</div><div class="label">Verified NGOs Listed</div></div>
+    <div class="stat-item"><div class="big-stat" style="color:#ff6b6b;">3</div><div class="label">Languages Supported</div></div>
+    <div class="stat-item"><div class="big-stat" style="color:#a78bfa;">12</div><div class="label">Core Feature Modules</div></div>
+  </div>
+  <div class="grid g4" style="margin-top:36px; max-width:1040px;">
+    <div class="card" style="--accent:#38f9d7"><div class="icon">🤖</div><h3>AI Matching</h3><p>GPT-powered SDG alignment scoring</p></div>
+    <div class="card" style="--accent:#f9d423"><div class="icon">📰</div><h3>Impact Feed</h3><p>Real-time activity from all users</p></div>
+    <div class="card" style="--accent:#ff6b6b"><div class="icon">📋</div><h3>Projects</h3><p>Help-Wanted board with mock payment</p></div>
+    <div class="card" style="--accent:#a78bfa"><div class="icon">🌐</div><h3>Multilingual</h3><p>English · தமிழ் · हिन्दी</p></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 5 — REGISTRATION FLOW
+══════════════════════════════════════════════ -->
+<div class="slide" id="s5">
+  <div class="tag">Feature 01</div>
+  <h2>Registration & <span class="grad">OTP Verification</span></h2>
+  <div class="steps">
+    <div class="step">
+      <div class="num">1</div>
+      <h3>Enter Details</h3>
+      <p>Name, email, password, organisation type, city (37 India cities)</p>
+    </div>
+    <div class="step">
+      <div class="num">2</div>
+      <h3>Pick 3 SDGs</h3>
+      <p>Exactly 3 goals selected — forms your matching fingerprint</p>
+    </div>
+    <div class="step">
+      <div class="num">3</div>
+      <h3>OTP Email Sent</h3>
+      <p>6-digit code via Brevo SMTP (300 emails/day, any recipient)</p>
+    </div>
+    <div class="step">
+      <div class="num">4</div>
+      <h3>Verify & Login</h3>
+      <p>Email confirmed — full access granted with session cookie</p>
+    </div>
+  </div>
+  <div class="highlight-box" style="margin-top:36px;">
+    <div class="two-col left" style="margin-top:0;">
+      <div>
+        <h3 style="font-size:15px; color:#38f9d7; margin-bottom:10px;">Security Features</h3>
+        <div class="bullet"><div class="dot2" style="background:#38f9d7;"></div><p>bcrypt password hashing (10 rounds)</p></div>
+        <div class="bullet"><div class="dot2" style="background:#38f9d7;"></div><p>Express-session with signed SECRET</p></div>
+        <div class="bullet"><div class="dot2" style="background:#38f9d7;"></div><p>OTP expires after use — no replay attacks</p></div>
+      </div>
+      <div>
+        <h3 style="font-size:15px; color:#f9d423; margin-bottom:10px;">Demo Credentials</h3>
+        <div class="cred-box" style="margin-top:0; padding:14px 20px; font-size:13.5px;">
+          green@ngo.org / password<br>
+          farming@biz.com / password
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 6 — SDG EXPLORER
+══════════════════════════════════════════════ -->
+<div class="slide" id="s6">
+  <div class="tag">Feature 02</div>
+  <h2>SDG <span class="grad">Explorer</span></h2>
+  <p>Browse all 17 UN Sustainable Development Goals — each with a description, icon, and colour from the UN brand guidelines. Click any SDG to deep-dive into its targets.</p>
+  <div class="sdg-pills" style="max-width:940px;">
+    <span class="sdg-pill" style="border-color:var(--sdg1);color:var(--sdg1);">1 · No Poverty</span>
+    <span class="sdg-pill" style="border-color:var(--sdg2);color:var(--sdg2);">2 · Zero Hunger</span>
+    <span class="sdg-pill" style="border-color:var(--sdg3);color:var(--sdg3);">3 · Good Health</span>
+    <span class="sdg-pill" style="border-color:var(--sdg4);color:var(--sdg4);">4 · Quality Education</span>
+    <span class="sdg-pill" style="border-color:var(--sdg5);color:var(--sdg5);">5 · Gender Equality</span>
+    <span class="sdg-pill" style="border-color:var(--sdg6);color:var(--sdg6);">6 · Clean Water</span>
+    <span class="sdg-pill" style="border-color:var(--sdg7);color:var(--sdg7);">7 · Affordable Energy</span>
+    <span class="sdg-pill" style="border-color:var(--sdg8);color:var(--sdg8);">8 · Decent Work</span>
+    <span class="sdg-pill" style="border-color:var(--sdg9);color:var(--sdg9);">9 · Industry & Innovation</span>
+    <span class="sdg-pill" style="border-color:var(--sdg10);color:var(--sdg10);">10 · Reduced Inequalities</span>
+    <span class="sdg-pill" style="border-color:var(--sdg11);color:var(--sdg11);">11 · Sustainable Cities</span>
+    <span class="sdg-pill" style="border-color:var(--sdg12);color:var(--sdg12);">12 · Responsible Consumption</span>
+    <span class="sdg-pill" style="border-color:var(--sdg13);color:var(--sdg13);">13 · Climate Action</span>
+    <span class="sdg-pill" style="border-color:var(--sdg14);color:var(--sdg14);">14 · Life Below Water</span>
+    <span class="sdg-pill" style="border-color:var(--sdg15);color:var(--sdg15);">15 · Life on Land</span>
+    <span class="sdg-pill" style="border-color:var(--sdg16);color:var(--sdg16);">16 · Peace & Justice</span>
+    <span class="sdg-pill" style="border-color:var(--sdg17);color:var(--sdg17);">17 · Partnerships</span>
+  </div>
+  <div class="grid g3" style="margin-top:24px; max-width:820px;">
+    <div class="card" style="--accent:var(--sdg3)"><div class="icon">🎨</div><h3>UN Colour Coded</h3><p>Each SDG renders with the official UN brand colour for instant recognition.</p></div>
+    <div class="card" style="--accent:var(--sdg4)"><div class="icon">🔍</div><h3>Filter & Search</h3><p>Users filter the explorer by goal number or keyword to find the most relevant SDGs.</p></div>
+    <div class="card" style="--accent:var(--sdg17)"><div class="icon">🧭</div><h3>Used Across Platform</h3><p>SDG tags appear on every profile, project, event, and NGO listing across the app.</p></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 7 — AI MATCHMAKING
+══════════════════════════════════════════════ -->
+<div class="slide" id="s7">
+  <div class="tag">Feature 03</div>
+  <h2>AI-Powered <span class="grad">Matchmaking</span></h2>
+  <div class="two-col" style="align-items:center;">
+    <div class="left">
+      <div class="bullet"><div class="dot2" style="background:#38f9d7;"></div><p><strong style="color:#e2e8f0;">SDG Alignment Score</strong> — computed by comparing each user's 3 chosen SDGs to calculate percentage overlap</p></div>
+      <div class="bullet"><div class="dot2" style="background:#43e0ff;"></div><p><strong style="color:#e2e8f0;">GPT-5.1 Analysis</strong> — OpenAI model writes a personalised collaboration rationale for every match pair</p></div>
+      <div class="bullet"><div class="dot2" style="background:#7f7fff;"></div><p><strong style="color:#e2e8f0;">Organisation Type Diversity</strong> — NGO ↔ Business ↔ Individual pairings surfaced first for cross-sector reach</p></div>
+      <div class="bullet"><div class="dot2" style="background:#a78bfa;"></div><p><strong style="color:#e2e8f0;">Location Context</strong> — matches from the same Indian city ranked higher for in-person collaboration potential</p></div>
+      <div class="bullet"><div class="dot2" style="background:#f9d423;"></div><p><strong style="color:#e2e8f0;">Accept / Decline Cards</strong> — swipe-style UX with running match history and conversation starters</p></div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:14px;">
+      <div class="card" style="--accent:#38f9d7; max-width:340px;">
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:10px;">
+          <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#38f9d7,#43e0ff);display:flex;align-items:center;justify-content:center;font-size:18px;">🌱</div>
+          <div><h3 style="font-size:15px;">Green Earth NGO</h3><p style="font-size:12px;color:#6b7fa3;">Chennai · NGO</p></div>
+          <div style="margin-left:auto;font-size:22px;font-weight:800;color:#38f9d7;">87%</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="sdg-pill" style="font-size:11px;padding:3px 10px;border-color:var(--sdg13);color:var(--sdg13);">SDG 13</span>
+          <span class="sdg-pill" style="font-size:11px;padding:3px 10px;border-color:var(--sdg15);color:var(--sdg15);">SDG 15</span>
+          <span class="sdg-pill" style="font-size:11px;padding:3px 10px;border-color:var(--sdg6);color:var(--sdg6);">SDG 6</span>
+        </div>
+        <p style="margin-top:10px;font-size:12px;font-style:italic;color:#7a8ca8;">"Strong synergy on climate and clean water initiatives — ideal for joint field projects."</p>
+      </div>
+      <p class="muted" style="text-align:center;">← Sample match card as seen in the app</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 8 — SDG IMPACT FEED
+══════════════════════════════════════════════ -->
+<div class="slide" id="s8">
+  <div class="tag">Feature 04</div>
+  <h2>SDG <span class="grad">Impact Feed</span></h2>
+  <p>A live activity stream that surfaces meaningful actions across the platform — not social noise, but purpose-driven milestones.</p>
+  <div class="grid g4" style="margin-top:28px; max-width:1040px;">
+    <div class="card" style="--accent:#38f9d7">
+      <div class="icon">👋</div>
+      <h3>User Joined</h3>
+      <p>New members announce their 3 SDGs on joining, building community context.</p>
+    </div>
+    <div class="card" style="--accent:#f9d423">
+      <div class="icon">📁</div>
+      <h3>Project Created</h3>
+      <p>Every new Help Wanted project appears here with its SDG tags and description.</p>
+    </div>
+    <div class="card" style="--accent:#ff6b6b">
+      <div class="icon">🤝</div>
+      <h3>Match Made</h3>
+      <p>When two users accept each other, the match is celebrated in the public feed.</p>
+    </div>
+    <div class="card" style="--accent:#a78bfa">
+      <div class="icon">🙋</div>
+      <h3>Project Joined</h3>
+      <p>When a user joins a project, it logs the action with their SDG profile context.</p>
+    </div>
+  </div>
+  <div class="highlight-box" style="margin-top:24px; text-align:center;">
+    <p style="text-align:center;">Every feed event links back to the actor's profile, enabling one-click discovery of collaborators.<br>
+    Feed renders in <strong style="color:#38f9d7;">real-time</strong> using TanStack Query with automatic background refetching.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 9 — PROJECTS / HELP WANTED
+══════════════════════════════════════════════ -->
+<div class="slide" id="s9">
+  <div class="tag">Feature 05</div>
+  <h2>Help Wanted <span class="grad">Projects</span></h2>
+  <div class="two-col">
+    <div class="left">
+      <h3 style="color:#38f9d7; margin-bottom:14px;">How It Works</h3>
+      <div class="bullet"><div class="dot2" style="background:#38f9d7;"></div><p>Users post projects tagged to 1–3 SDGs with title, description, and skills needed</p></div>
+      <div class="bullet"><div class="dot2" style="background:#43e0ff;"></div><p>Toggle <strong style="color:#e2e8f0;">"Help Wanted"</strong> to make the project open for collaborators to join</p></div>
+      <div class="bullet"><div class="dot2" style="background:#7f7fff;"></div><p><strong style="color:#e2e8f0;">Mock Payment</strong> — sponsor a project with a simulated payment flow (no real card needed)</p></div>
+      <div class="bullet"><div class="dot2" style="background:#a78bfa;"></div><p>Project creator sees a list of all members who have joined their project</p></div>
+      <div class="bullet"><div class="dot2" style="background:#f9d423;"></div><p>Joining a project auto-posts to the SDG Impact Feed for visibility</p></div>
+    </div>
+    <div>
+      <h3 style="color:#f9d423; margin-bottom:14px; text-align:left;">5 Sample Projects in DB</h3>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div class="ngo-chip" style="display:flex; justify-content:space-between;">🌳 Urban Tree Planting Drive <span style="color:var(--sdg15);">SDG 11,15</span></div>
+        <div class="ngo-chip" style="display:flex; justify-content:space-between;">💧 Clean Water for Rural Schools <span style="color:var(--sdg6);">SDG 6</span></div>
+        <div class="ngo-chip" style="display:flex; justify-content:space-between;">👩‍💼 Women Entrepreneurship Incubator <span style="color:var(--sdg5);">SDG 5,8</span></div>
+        <div class="ngo-chip" style="display:flex; justify-content:space-between;">☀️ Solar-Powered Community Library <span style="color:var(--sdg7);">SDG 4,7</span></div>
+        <div class="ngo-chip" style="display:flex; justify-content:space-between;">♻️ Zero-Waste Farmers Market <span style="color:var(--sdg12);">SDG 2,12</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 10 — SDG EVENTS
+══════════════════════════════════════════════ -->
+<div class="slide" id="s10">
+  <div class="tag">Feature 06</div>
+  <h2>SDG <span class="grad">Events</span></h2>
+  <p>A dedicated events board for webinars, field visits, and workshops — all tagged to specific SDGs so participants self-select by purpose.</p>
+  <div class="grid g3" style="margin-top:24px; max-width:900px;">
+    <div class="card" style="--accent:var(--sdg13)">
+      <div class="icon">💻</div>
+      <h3>Webinar</h3>
+      <p style="color:#7a8ca8; font-size:12px; margin-bottom:8px;">10 May 2026 · Online</p>
+      <p>SDG Action Webinar: Climate Solutions for South India</p>
+      <div style="display:flex;gap:5px;margin-top:10px;flex-wrap:wrap;">
+        <span class="sdg-pill" style="font-size:10px;padding:2px 8px;border-color:var(--sdg7);color:var(--sdg7);">SDG 7</span>
+        <span class="sdg-pill" style="font-size:10px;padding:2px 8px;border-color:var(--sdg11);color:var(--sdg11);">SDG 11</span>
+        <span class="sdg-pill" style="font-size:10px;padding:2px 8px;border-color:var(--sdg13);color:var(--sdg13);">SDG 13</span>
+      </div>
+    </div>
+    <div class="card" style="--accent:var(--sdg14)">
+      <div class="icon">🏖️</div>
+      <h3>Field Visit</h3>
+      <p style="color:#7a8ca8; font-size:12px; margin-bottom:8px;">24 May 2026 · Marina Beach, Chennai</p>
+      <p>Coastal Ecosystem Field Visit — Marina Beach Cleanup</p>
+      <div style="display:flex;gap:5px;margin-top:10px;flex-wrap:wrap;">
+        <span class="sdg-pill" style="font-size:10px;padding:2px 8px;border-color:var(--sdg14);color:var(--sdg14);">SDG 14</span>
+        <span class="sdg-pill" style="font-size:10px;padding:2px 8px;border-color:var(--sdg15);color:var(--sdg15);">SDG 15</span>
+        <span class="sdg-pill" style="font-size:10px;padding:2px 8px;border-color:var(--sdg13);color:var(--sdg13);">SDG 13</span>
+      </div>
+    </div>
+    <div class="card" style="--accent:var(--sdg2)">
+      <div class="icon">🌾</div>
+      <h3>Workshop</h3>
+      <p style="color:#7a8ca8; font-size:12px; margin-bottom:8px;">7 Jun 2026 · TNAU, Coimbatore</p>
+      <p>Sustainable Agriculture Workshop: Zero-Waste Farming Practices</p>
+      <div style="display:flex;gap:5px;margin-top:10px;flex-wrap:wrap;">
+        <span class="sdg-pill" style="font-size:10px;padding:2px 8px;border-color:var(--sdg2);color:var(--sdg2);">SDG 2</span>
+        <span class="sdg-pill" style="font-size:10px;padding:2px 8px;border-color:var(--sdg12);color:var(--sdg12);">SDG 12</span>
+        <span class="sdg-pill" style="font-size:10px;padding:2px 8px;border-color:var(--sdg15);color:var(--sdg15);">SDG 15</span>
+      </div>
+    </div>
+  </div>
+  <div class="highlight-box" style="margin-top:22px; text-align:center;">
+    <p style="text-align:center;">Logged-in users can <strong style="color:#38f9d7;">Register / Unregister</strong> for events with one click. Attendee count updates live. Organisers can create new events from the dashboard.</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 11 — NGO DIRECTORY
+══════════════════════════════════════════════ -->
+<div class="slide" id="s11">
+  <div class="tag">Feature 07</div>
+  <h2>NGO <span class="grad">Directory</span></h2>
+  <p>14 verified NGOs listed with missions, SDG focus areas, and a direct collaboration request form.</p>
+  <div class="grid g4" style="margin-top:20px; max-width:1060px;">
+    <div class="ngo-chip" style="display:block; padding:12px 14px;">🌱 Green Earth Foundation<br><span style="color:var(--sdg13);font-size:11px;">SDG 13, 15</span></div>
+    <div class="ngo-chip" style="display:block; padding:12px 14px;">💧 WaterAid India<br><span style="color:var(--sdg6);font-size:11px;">SDG 6, 3</span></div>
+    <div class="ngo-chip" style="display:block; padding:12px 14px;">📚 Shiksha Foundation<br><span style="color:var(--sdg4);font-size:11px;">SDG 4, 10</span></div>
+    <div class="ngo-chip" style="display:block; padding:12px 14px;">☀️ Solar Seva Trust<br><span style="color:var(--sdg7);font-size:11px;">SDG 7, 13</span></div>
+    <div class="ngo-chip" style="display:block; padding:12px 14px;">👩 Mahila Shakti<br><span style="color:var(--sdg5);font-size:11px;">SDG 5, 8</span></div>
+    <div class="ngo-chip" style="display:block; padding:12px 14px;">🍎 Annadaata<br><span style="color:var(--sdg2);font-size:11px;">SDG 2, 1</span></div>
+    <div class="ngo-chip" style="display:block; padding:12px 14px;">🏥 Aarogya Setu NGO<br><span style="color:var(--sdg3);font-size:11px;">SDG 3, 10</span></div>
+    <div class="ngo-chip" style="display:block; padding:12px 14px;">🏙️ Urban Habitat India<br><span style="color:var(--sdg11);font-size:11px;">SDG 11, 9</span></div>
+    <div class="ngo-chip" style="display:block; padding:12px 14px;">♻️ Zero Waste India<br><span style="color:var(--sdg12);font-size:11px;">SDG 12, 14</span></div>
+    <div class="ngo-chip" style="display:block; padding:12px 14px;">🌊 Ocean Guardians<br><span style="color:var(--sdg14);font-size:11px;">SDG 14, 13</span></div>
+    <div class="ngo-chip" style="display:block; padding:12px 14px;">⚖️ Nyaya Disha<br><span style="color:var(--sdg16);font-size:11px;">SDG 16, 10</span></div>
+    <div class="ngo-chip" style="display:block; padding:12px 14px;">🤝 Global Bridges India<br><span style="color:var(--sdg17);font-size:11px;">SDG 17, 8</span></div>
+    <div class="ngo-chip" style="display:block; padding:12px 14px;">🌿 Aranya Protect<br><span style="color:var(--sdg15);font-size:11px;">SDG 15, 6</span></div>
+    <div class="ngo-chip" style="display:block; padding:12px 14px;">🏘️ Gram Unnati<br><span style="color:var(--sdg1);font-size:11px;">SDG 1, 2</span></div>
+  </div>
+  <p style="margin-top:18px; font-size:14px; color:#6b7fa3;">Each NGO card has a <strong style="color:#38f9d7;">"Collaborate"</strong> button that opens a full form — org name, contact person, email, phone, and proposal. Submissions saved and visible in the Admin Dashboard.</p>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 12 — VOLUNTEER HUB & CERTIFICATES
+══════════════════════════════════════════════ -->
+<div class="slide" id="s12">
+  <div class="tag">Feature 08</div>
+  <h2>Volunteer Hub & <span class="grad">Certificates</span></h2>
+  <div class="two-col">
+    <div class="left">
+      <h3 style="color:#38f9d7; margin-bottom:14px;">Volunteer Applications</h3>
+      <div class="bullet"><div class="dot2" style="background:#38f9d7;"></div><p>Users submit volunteer applications to projects — name, skills, availability, motivation statement</p></div>
+      <div class="bullet"><div class="dot2" style="background:#43e0ff;"></div><p>All applications tracked per user with status: <strong style="color:#e2e8f0;">Pending / Approved / Rejected</strong></p></div>
+      <div class="bullet"><div class="dot2" style="background:#7f7fff;"></div><p>Tab view switches between "My Certificates" and "My Records" in the Volunteer Hub</p></div>
+
+      <h3 style="color:#f9d423; margin-top:24px; margin-bottom:14px;">Certificates</h3>
+      <div class="bullet"><div class="dot2" style="background:#f9d423;"></div><p>Downloadable PDF certificates generated on approval — personalised with user name and SDG badges</p></div>
+      <div class="bullet"><div class="dot2" style="background:#fbbf24;"></div><p>Unique certificate ID for verification; linked to the submission record</p></div>
+      <div class="bullet"><div class="dot2" style="background:#f59e0b;"></div><p>Certificate ownership verified via <code style="background:rgba(255,255,255,.08);padding:2px 6px;border-radius:4px;font-size:12px;">certBelongsToUser()</code> — prevents spoofing</p></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div class="card" style="--accent:#38f9d7; max-width:360px;">
+        <div class="icon">🏅</div>
+        <h3>Certificate of Participation</h3>
+        <p style="font-size:12px;">Awarded to <strong style="color:#e2e8f0;">Priya Sharma</strong> for volunteering on<br><em>Clean Water for Rural Schools</em></p>
+        <div style="display:flex;gap:6px;margin-top:10px;">
+          <span class="sdg-pill" style="font-size:10px;padding:2px 8px;border-color:var(--sdg6);color:var(--sdg6);">SDG 6</span>
+          <span class="sdg-pill" style="font-size:10px;padding:2px 8px;border-color:var(--sdg3);color:var(--sdg3);">SDG 3</span>
+        </div>
+        <p style="margin-top:8px; font-size:11px; color:#6b7fa3;">ID: CERT-2026-0042 · Issued Apr 2026</p>
+      </div>
+      <p class="muted" style="text-align:center; font-size:12px;">← Sample certificate card as seen in Volunteer Hub</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 13 — ADMIN DASHBOARD & SUBMISSIONS
+══════════════════════════════════════════════ -->
+<div class="slide" id="s13">
+  <div class="tag">Feature 09</div>
+  <h2>Admin Dashboard & <span class="grad">Submissions</span></h2>
+  <div class="grid g3" style="max-width:900px; margin-top:28px;">
+    <div class="card" style="--accent:#e11d48">
+      <div class="icon">👤</div>
+      <h3>User Management</h3>
+      <p>View all registered users, their SDG selections, organisation type, city, and email verification status. Admin can delete accounts.</p>
+    </div>
+    <div class="card" style="--accent:#7c3aed">
+      <div class="icon">📬</div>
+      <h3>Help Submissions</h3>
+      <p>All volunteer applications + NGO collaboration forms collected in one dashboard. Filter by status and approve/reject with email notification.</p>
+    </div>
+    <div class="card" style="--accent:#0891b2">
+      <div class="icon">📊</div>
+      <h3>Platform Stats</h3>
+      <p>Total users, projects, events, active matches, and certificates issued — at a glance in the admin overview panel.</p>
+    </div>
+  </div>
+  <div class="highlight-box" style="margin-top:24px;">
+    <div class="two-col left" style="margin-top:0;">
+      <div>
+        <h3 style="font-size:14px; color:#38f9d7; margin-bottom:10px;">Help Submissions Dashboard</h3>
+        <div class="bullet"><div class="dot2" style="background:#38f9d7;"></div><p>Unified view of all volunteer forms and collab requests</p></div>
+        <div class="bullet"><div class="dot2" style="background:#43e0ff;"></div><p>Filter by Pending / Approved / Rejected</p></div>
+        <div class="bullet"><div class="dot2" style="background:#7f7fff;"></div><p>One-click approve → triggers email + auto-generates certificate</p></div>
+      </div>
+      <div>
+        <h3 style="font-size:14px; color:#f9d423; margin-bottom:10px;">Access Control</h3>
+        <div class="bullet"><div class="dot2" style="background:#f9d423;"></div><p>Admin routes protected server-side — non-admins get 403</p></div>
+        <div class="bullet"><div class="dot2" style="background:#fbbf24;"></div><p>Admin flag stored in user DB record (isAdmin: true)</p></div>
+        <div class="bullet"><div class="dot2" style="background:#f59e0b;"></div><p>Frontend nav only shows Admin link when session is admin</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 14 — NOTIFICATIONS & EMAIL
+══════════════════════════════════════════════ -->
+<div class="slide" id="s14">
+  <div class="tag">Feature 10</div>
+  <h2>Notifications & <span class="grad">Email</span></h2>
+  <div class="two-col">
+    <div class="left">
+      <h3 style="color:#38f9d7; margin-bottom:14px;">In-App Notification Center</h3>
+      <div class="bullet"><div class="dot2" style="background:#38f9d7;"></div><p>Bell icon in navbar shows unread notification count</p></div>
+      <div class="bullet"><div class="dot2" style="background:#43e0ff;"></div><p>Notifications for: new match, project joined, event registration, submission approved</p></div>
+      <div class="bullet"><div class="dot2" style="background:#7f7fff;"></div><p>Mark all as read · individual dismiss · real-time badge update</p></div>
+    </div>
+    <div class="left">
+      <h3 style="color:#f9d423; margin-bottom:14px;">Email Stack (Brevo Primary)</h3>
+      <div class="bullet"><div class="dot2" style="background:#f9d423;"></div><p><strong style="color:#e2e8f0;">Brevo SMTP</strong> — 300 free emails/day, delivers to any recipient email address</p></div>
+      <div class="bullet"><div class="dot2" style="background:#fbbf24;"></div><p><strong style="color:#e2e8f0;">Resend API</strong> — fallback if Brevo is unreachable</p></div>
+      <div class="bullet"><div class="dot2" style="background:#f59e0b;"></div><p><strong style="color:#e2e8f0;">Gmail SMTP</strong> — secondary fallback for personal accounts</p></div>
+    </div>
+  </div>
+  <div class="highlight-box" style="margin-top:24px; text-align:center;">
+    <p style="font-size:15px; text-align:center;">
+      Emails sent for: <strong style="color:#38f9d7;">OTP Verification · Submission Approved · Match Notification</strong><br>
+      Transactional emails are queued with retry logic — if Brevo fails, Resend fires automatically.
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 15 — AI CHATBOT
+══════════════════════════════════════════════ -->
+<div class="slide" id="s15">
+  <div class="tag">Feature 11</div>
+  <h2>Floating <span class="grad">AI Chatbot</span></h2>
+  <div class="two-col" style="align-items:center;">
+    <div class="left">
+      <div class="bullet"><div class="dot2" style="background:#38f9d7;"></div><p>Persistent floating chat button visible on every page — click to expand a full chat interface</p></div>
+      <div class="bullet"><div class="dot2" style="background:#43e0ff;"></div><p>Powered by <strong style="color:#e2e8f0;">GPT-4.1</strong> with a system prompt scoped to SDG knowledge and the platform's features</p></div>
+      <div class="bullet"><div class="dot2" style="background:#7f7fff;"></div><p>Context-aware: the chatbot knows which SDGs the logged-in user has selected</p></div>
+      <div class="bullet"><div class="dot2" style="background:#a78bfa;"></div><p>Suggests relevant projects, events, and NGOs based on conversation</p></div>
+      <div class="bullet"><div class="dot2" style="background:#f9d423;"></div><p>Conversation history preserved within the session — full multi-turn dialogue support</p></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px; max-width:340px;">
+      <div class="card" style="--accent:#38f9d7;">
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="background:rgba(56,249,215,.1);border-radius:12px 12px 2px 12px;padding:10px 14px;font-size:13px;color:#b0bcd4;">Hi! Which SDGs is your organisation focused on?</div>
+          <div style="background:rgba(255,255,255,.06);border-radius:2px 12px 12px 12px;padding:10px 14px;font-size:13px;color:#e2e8f0;text-align:right;">We work on SDG 6 and SDG 3 — clean water and health.</div>
+          <div style="background:rgba(56,249,215,.1);border-radius:12px 12px 2px 12px;padding:10px 14px;font-size:13px;color:#b0bcd4;">Great! I found 3 matching NGOs and 2 open projects in your area. Want me to show you the best fit?</div>
+        </div>
+      </div>
+      <p class="muted" style="text-align:center; font-size:12px;">← Sample chatbot conversation</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 16 — DARK MODE & MULTILINGUAL
+══════════════════════════════════════════════ -->
+<div class="slide" id="s16">
+  <div class="tag">Feature 12</div>
+  <h2>Dark Mode & <span class="grad">Multilingual</span></h2>
+  <div class="grid g2" style="max-width:860px; margin-top:28px;">
+    <div class="card" style="--accent:#a78bfa">
+      <div class="icon">🌙</div>
+      <h3>Dark Mode</h3>
+      <p>Full dark/light theme toggle stored in <code style="background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px;font-size:11px;">localStorage</code>. Tailwind <code style="background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px;font-size:11px;">dark:</code> variants applied across every component — sidebar, cards, modals, forms, badges, and buttons all switch seamlessly.</p>
+    </div>
+    <div class="card" style="--accent:#38f9d7">
+      <div class="icon">🌐</div>
+      <h3>3-Language Support</h3>
+      <p>Full translations for <strong style="color:#e2e8f0;">English · தமிழ் (Tamil) · हिन्दी (Hindi)</strong> across all pages and components. Language preference saved to <code style="background:rgba(255,255,255,.08);padding:1px 6px;border-radius:4px;font-size:11px;">sdg_lang</code> in localStorage.</p>
+    </div>
+  </div>
+  <div class="highlight-box" style="margin-top:24px;">
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; text-align:center;">
+      <div>
+        <div style="font-size:24px; margin-bottom:8px;">🇺🇸</div>
+        <h3 style="font-size:15px; color:#e2e8f0;">English</h3>
+        <p style="font-size:13px; color:#6b7fa3;">Default language. Full coverage of all pages, navigation, forms, buttons, and messages.</p>
+      </div>
+      <div>
+        <div style="font-size:24px; margin-bottom:8px;">🇮🇳</div>
+        <h3 style="font-size:15px; color:#e2e8f0;">தமிழ் (Tamil)</h3>
+        <p style="font-size:13px; color:#6b7fa3;">Complete translation for all UI strings — navigation, hero text, cards, footer, certificates, and forms.</p>
+      </div>
+      <div>
+        <div style="font-size:24px; margin-bottom:8px;">🇮🇳</div>
+        <h3 style="font-size:15px; color:#e2e8f0;">हिन्दी (Hindi)</h3>
+        <p style="font-size:13px; color:#6b7fa3;">Full Hindi translation — same coverage as Tamil. Switchable at runtime with no page reload.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 17 — TECH STACK
+══════════════════════════════════════════════ -->
+<div class="slide" id="s17">
+  <div class="tag">Architecture</div>
+  <h2>Tech <span class="grad">Stack</span></h2>
+  <div class="two-col" style="align-items:start; max-width:900px;">
+    <div>
+      <h3 style="color:#38f9d7; margin-bottom:14px;">Frontend</h3>
+      <div class="tech-grid" style="justify-content:flex-start; margin-top:0;">
+        <span class="tech-pill">React 18</span>
+        <span class="tech-pill">Vite</span>
+        <span class="tech-pill">TypeScript</span>
+        <span class="tech-pill">TailwindCSS</span>
+        <span class="tech-pill">shadcn/ui</span>
+        <span class="tech-pill">TanStack Query v5</span>
+        <span class="tech-pill">wouter (routing)</span>
+        <span class="tech-pill">react-i18next</span>
+        <span class="tech-pill">lucide-react</span>
+        <span class="tech-pill">react-hook-form</span>
+        <span class="tech-pill">Zod</span>
+      </div>
+    </div>
+    <div>
+      <h3 style="color:#f9d423; margin-bottom:14px;">Backend</h3>
+      <div class="tech-grid" style="justify-content:flex-start; margin-top:0;">
+        <span class="tech-pill">Express.js</span>
+        <span class="tech-pill">TypeScript</span>
+        <span class="tech-pill">PostgreSQL</span>
+        <span class="tech-pill">Drizzle ORM</span>
+        <span class="tech-pill">express-session</span>
+        <span class="tech-pill">bcrypt</span>
+        <span class="tech-pill">OpenAI GPT-4.1 / GPT-5.1</span>
+        <span class="tech-pill">Nodemailer</span>
+        <span class="tech-pill">Brevo SMTP</span>
+        <span class="tech-pill">Resend API</span>
+      </div>
+    </div>
+  </div>
+  <div class="highlight-box" style="margin-top:28px; text-align:center;">
+    <p style="text-align:center; font-size:15px;">
+      Deployed on <strong style="color:#38f9d7;">Replit</strong> · PostgreSQL managed DB · Session auth (no OAuth dependency)<br>
+      Monorepo with shared <code style="background:rgba(255,255,255,.08);padding:2px 6px;border-radius:4px;font-size:13px;">schema.ts</code> ensuring type safety end-to-end from DB → API → UI
+    </p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 18 — DEMO WALKTHROUGH
+══════════════════════════════════════════════ -->
+<div class="slide" id="s18">
+  <div class="tag">Live Demo Guide</div>
+  <h2>Demo <span class="grad">Walkthrough</span></h2>
+  <div class="steps" style="flex-wrap:wrap; gap:12px; justify-content:center;">
+    <div class="step" style="max-width:160px; flex:none;">
+      <div class="num">1</div>
+      <h3>Log In</h3>
+      <p>Use green@ngo.org / password to sign in as the NGO account</p>
+    </div>
+    <div class="step" style="max-width:160px; flex:none; --arrow:none;">
+      <div class="num">2</div>
+      <h3>Explore SDGs</h3>
+      <p>Navigate to SDG Explorer — show all 17 colour-coded goals</p>
+    </div>
+    <div class="step" style="max-width:160px; flex:none;">
+      <div class="num">3</div>
+      <h3>Run AI Match</h3>
+      <p>Go to Matches — trigger the AI matchmaker and accept a suggestion</p>
+    </div>
+    <div class="step" style="max-width:160px; flex:none;">
+      <div class="num">4</div>
+      <h3>Impact Feed</h3>
+      <p>Show the real-time feed — the accepted match now appears as a feed event</p>
+    </div>
+    <div class="step" style="max-width:160px; flex:none;">
+      <div class="num">5</div>
+      <h3>Projects</h3>
+      <p>Browse Help Wanted projects — join one and show the mock payment</p>
+    </div>
+    <div class="step" style="max-width:160px; flex:none;">
+      <div class="num">6</div>
+      <h3>Events</h3>
+      <p>Register for the Marina Beach Field Visit event</p>
+    </div>
+    <div class="step" style="max-width:160px; flex:none;">
+      <div class="num">7</div>
+      <h3>NGOs & Collab</h3>
+      <p>Open an NGO card and submit a collaboration request form</p>
+    </div>
+    <div class="step" style="max-width:160px; flex:none;">
+      <div class="num">8</div>
+      <h3>Language & Theme</h3>
+      <p>Switch to Tamil, then toggle dark mode — everything updates instantly</p>
+    </div>
+  </div>
+  <div class="cred-box" style="margin-top:24px; text-align:center; max-width:440px; font-size:14px;">
+    🌱 green@ngo.org / password<br>
+    🌾 farming@biz.com / password
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 19 — END
+══════════════════════════════════════════════ -->
+<div class="slide end-slide" id="s19">
+  <div class="globe">🌍</div>
+  <div class="tag">Thank You</div>
+  <h1><span class="grad">SDG Synergy</span></h1>
+  <p style="font-size:19px; margin-top:12px;">Connecting people through purpose.<br>Building a sustainable future — one collaboration at a time.</p>
+  <div class="sdg-bar" style="margin-top:40px; max-width:600px;">
+    <div style="background:var(--sdg1)"></div><div style="background:var(--sdg2)"></div>
+    <div style="background:var(--sdg3)"></div><div style="background:var(--sdg4)"></div>
+    <div style="background:var(--sdg5)"></div><div style="background:var(--sdg6)"></div>
+    <div style="background:var(--sdg7)"></div><div style="background:var(--sdg8)"></div>
+    <div style="background:var(--sdg9)"></div><div style="background:var(--sdg10)"></div>
+    <div style="background:var(--sdg11)"></div><div style="background:var(--sdg12)"></div>
+    <div style="background:var(--sdg13)"></div><div style="background:var(--sdg14)"></div>
+    <div style="background:var(--sdg15)"></div><div style="background:var(--sdg16)"></div>
+    <div style="background:var(--sdg17)"></div>
+  </div>
+  <p class="muted" style="margin-top:16px;">Built on Replit · Powered by OpenAI · Backed by Brevo</p>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ══════ NAVIGATION ══════ -->
+<div class="nav" id="nav">
+  <button onclick="go(-1)" title="Previous (← arrow key)">&#8592;</button>
+  <div class="dots" id="dots"></div>
+  <span class="counter" id="counter">1 / 19</span>
+  <button onclick="go(1)" title="Next (→ arrow key)">&#8594;</button>
+</div>
+
+<script>
+  const TOTAL = 19;
+  let cur = 1;
+
+  const dotsEl = document.getElementById('dots');
+  const counterEl = document.getElementById('counter');
+
+  // Build dots
+  for (let i = 1; i <= TOTAL; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === 1 ? ' on' : '');
+    d.onclick = () => goTo(i);
+    d.style.cursor = 'pointer';
+    dotsEl.appendChild(d);
+  }
+
+  function goTo(n) {
+    document.getElementById('s' + cur).classList.remove('active');
+    dotsEl.children[cur - 1].classList.remove('on');
+    cur = Math.max(1, Math.min(TOTAL, n));
+    document.getElementById('s' + cur).classList.add('active');
+    dotsEl.children[cur - 1].classList.add('on');
+    counterEl.textContent = cur + ' / ' + TOTAL;
+  }
+
+  function go(d) { goTo(cur + d); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); go(1); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { e.preventDefault(); go(-1); }
+    if (e.key === 'Home') goTo(1);
+    if (e.key === 'End')  goTo(TOTAL);
+    const n = parseInt(e.key);
+    if (!isNaN(n) && n >= 1 && n <= 9) goTo(n);
+  });
+
+  // Touch / swipe support
+  let tx = 0;
+  document.addEventListener('touchstart', e => tx = e.touches[0].clientX, { passive: true });
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 60) go(dx < 0 ? 1 : -1);
+  });
+</script>
+</body>
+</html>
