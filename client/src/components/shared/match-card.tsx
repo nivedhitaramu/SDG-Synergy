@@ -23,22 +23,22 @@ export function MatchCard({ match }: { match: MatchWithDetails }) {
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-all duration-300 border-border/60 group">
       <CardContent className="p-6">
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-14 w-14 border-2 border-primary/20">
+        <div className="flex justify-between items-start gap-3 mb-4">
+          <div className="flex items-center gap-4 min-w-0 flex-1">
+            <Avatar className="h-14 w-14 shrink-0 border-2 border-primary/20">
               <AvatarFallback className="bg-primary/10 text-primary font-bold text-xl">
                 {otherUser.name.substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div>
-              <h3 className="font-display font-bold text-lg">{otherUser.name}</h3>
-              <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+            <div className="min-w-0">
+              <h3 className="font-display font-bold text-lg break-words">{otherUser.name}</h3>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground mt-1">
                 <span className="flex items-center gap-1"><Building2 className="w-3.5 h-3.5"/> {otherUser.orgType}</span>
                 <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5"/> {otherUser.location}</span>
               </div>
             </div>
           </div>
-          <div className={`flex flex-col items-center justify-center rounded-xl p-3 ${scoreColor}`}>
+          <div className={`shrink-0 flex flex-col items-center justify-center rounded-xl p-3 ${scoreColor}`}>
             <span className="text-2xl font-display font-black leading-none">{match.score}%</span>
             <span className="text-[10px] uppercase font-bold tracking-wider mt-1 opacity-80">Match</span>
           </div>
