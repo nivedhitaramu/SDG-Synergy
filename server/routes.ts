@@ -33,17 +33,68 @@ const AI_FALLBACK_MODELS = (process.env.AI_FALLBACK_MODELS ??
   (AI_BASE_URL?.includes("generativelanguage.googleapis.com") ? "gemini-3.1-flash-lite" : ""))
   .split(",").map(m => m.trim()).filter(Boolean);
 
-async function aiChatCompletion(defaultModel: string, params: Record<string, any>) {
+const USE_GEMINI_NATIVE = !!AI_BASE_URL?.includes("generativelanguage.googleapis.com");
+
+// Calls Gemini's native generateContent API (more reliable than its OpenAI-compatible
+// layer, and it returns readable error messages). Returns an OpenAI-shaped result.
+async function geminiGenerate(model: string, params: Record<string, any>) {
+  const messages: { role: string; content: string }[] = params.messages || [];
+  const system = messages.filter(m => m.role === "system").map(m => m.content).join("\n\n");
+  const contents = messages
+    .filter(m => m.role !== "system")
+    .map(m => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: String(m.content) }] }));
+  const requested = params.max_tokens ?? params.max_completion_tokens ?? 1000;
+  const body: Record<string, any> = {
+    contents,
+    // extra room because Gemini 3 models spend some output tokens on internal "thinking"
+    generationConfig: { maxOutputTokens: Math.max(requested * 4, 2048) },
+  };
+  if (system) body.systemInstruction = { parts: [{ text: system }] };
+  if (params.response_format?.type === "json_object") body.generationConfig.responseMimeType = "application/json";
+
+  const host = process.env.GEMINI_API_HOST || "https://generativelanguage.googleapis.com";
+  const url = `${host}/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": AI_API_KEY || "" },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(30000),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    let detail = text.slice(0, 500);
+    try { detail = JSON.parse(text)?.error?.message || detail; } catch {}
+    const err: any = new Error(`Gemini ${res.status}: ${detail || "(empty response)"}`);
+    err.status = res.status;
+    throw err;
+  }
+  const data = JSON.parse(text);
+  const content = (data?.candidates?.[0]?.content?.parts || [])
+    .filter((p: any) => !p.thought)
+    .map((p: any) => p.text || "")
+    .join("");
+  if (!content) console.warn("Gemini returned no text. finishReason:", data?.candidates?.[0]?.finishReason, "promptFeedback:", JSON.stringify(data?.promptFeedback || {}));
+  return { choices: [{ message: { role: "assistant", content } }] };
+}
+
+async function aiChatCompletion(defaultModel: string, params: Record<string, any>): Promise<any> {
   const models = Array.from(new Set([AI_MODEL || defaultModel, ...AI_FALLBACK_MODELS]));
   let lastErr: unknown;
   for (const model of models) {
-    try {
-      // fail fast (no long silent retries) so the next model is tried quickly
-      return await openai.chat.completions.create({ ...params, model } as any, { maxRetries: 1, timeout: 25000 });
-    } catch (err: any) {
-      lastErr = err;
-      console.error(`AI model "${model}" failed: ${err?.status ?? ""} ${err?.message ?? err}`);
-      if (![404, 408, 429, 500, 502, 503, 504].includes(err?.status) && err?.name !== "APIConnectionTimeoutError") throw err;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        if (USE_GEMINI_NATIVE) return await geminiGenerate(model, params);
+        // fail fast (no long silent retries) so the next model is tried quickly
+        return await openai.chat.completions.create({ ...params, model } as any, { maxRetries: 0, timeout: 25000 });
+      } catch (err: any) {
+        lastErr = err;
+        const status = err?.status;
+        console.error(`AI model "${model}" attempt ${attempt} failed: ${status ?? ""} ${err?.message ?? err}`);
+        const retryable = [408, 429, 500, 502, 503, 504].includes(status) || err?.name === "TimeoutError" || err?.name === "APIConnectionTimeoutError";
+        if (retryable && attempt === 1) { await new Promise(r => setTimeout(r, 1500)); continue; }
+        if (retryable || status === 404) break; // try the next model
+        throw err;
+      }
     }
   }
   throw lastErr;
