@@ -1,0 +1,26 @@
+# Render Blueprint: New → Blueprint → pick this repo.
+services:
+  - type: web
+    name: sdg-synergy
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build && npm run db:push -- --force
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: DATABASE_URL      # from Neon (free Postgres)
+        sync: false
+      - key: AI_API_KEY        # e.g. a free Google AI Studio (Gemini) key
+        sync: false
+      - key: AI_BASE_URL       # https://generativelanguage.googleapis.com/v1beta/openai/
+        sync: false
+      - key: AI_MODEL          # a Gemini model name from AI Studio
+        sync: false
+      - key: BREVO_API_KEY     # Brevo → SMTP & API → API Keys (starts with xkeysib-)
+        sync: false
+      - key: SENDER_EMAIL      # the sender address verified in Brevo
+        sync: false
