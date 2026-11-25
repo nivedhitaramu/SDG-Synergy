@@ -27,6 +27,28 @@ const openai = new OpenAI({
   baseURL: AI_BASE_URL,
 });
 
+// Models to try in order. If one is busy (503), rate-limited (429) or missing (404),
+// the next one is tried. Set AI_FALLBACK_MODELS as a comma-separated list to override.
+const AI_FALLBACK_MODELS = (process.env.AI_FALLBACK_MODELS ??
+  (AI_BASE_URL?.includes("generativelanguage.googleapis.com") ? "gemini-3.1-flash-lite" : ""))
+  .split(",").map(m => m.trim()).filter(Boolean);
+
+async function aiChatCompletion(defaultModel: string, params: Record<string, any>) {
+  const models = Array.from(new Set([AI_MODEL || defaultModel, ...AI_FALLBACK_MODELS]));
+  let lastErr: unknown;
+  for (const model of models) {
+    try {
+      // fail fast (no long silent retries) so the next model is tried quickly
+      return await openai.chat.completions.create({ ...params, model } as any, { maxRetries: 1, timeout: 25000 });
+    } catch (err: any) {
+      lastErr = err;
+      console.error(`AI model "${model}" failed: ${err?.status ?? ""} ${err?.message ?? err}`);
+      if (![404, 408, 429, 500, 502, 503, 504].includes(err?.status) && err?.name !== "APIConnectionTimeoutError") throw err;
+    }
+  }
+  throw lastErr;
+}
+
 // OpenAI's newer models need max_completion_tokens; most other providers expect max_tokens.
 function tokenLimit(n: number) {
   return isOpenAIProvider ? { max_completion_tokens: n } : { max_tokens: n };
@@ -860,8 +882,7 @@ Projects: ${userProjects.map(p => `${p.title} (${p.description.slice(0, 80)})`).
         return `[${i}] ${u.name} | ${u.orgType} | ${u.location} | SDGs: ${u.sdgs.join(',')} | Expertise: ${u.expertise} | Projects: ${theirProjects.map(p => p.title).join(', ') || 'None'}`;
       }).join('\n');
 
-      const aiResponse = await openai.chat.completions.create({
-        model: AI_MODEL || "gpt-5.1",
+      const aiResponse = await aiChatCompletion("gpt-5.1", {
         messages: [{
           role: "system",
           content: `You are an SDG collaboration matchmaker. Given a user profile and a list of candidates, rank the top matches and explain WHY each is a good collaboration partner. Focus on SDG alignment, complementary expertise, and project synergy. Be concise and specific.`
@@ -939,8 +960,7 @@ Platform features you can reference:
 
 Keep responses under 150 words unless explaining an SDG in depth. Use bullet points where helpful. Always be encouraging and specific.`;
 
-      const response = await openai.chat.completions.create({
-        model: AI_MODEL || "gpt-4.1",
+      const response = await aiChatCompletion("gpt-4.1", {
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
@@ -953,7 +973,7 @@ Keep responses under 150 words unless explaining an SDG in depth. Use bullet poi
     } catch (err) {
       if (err instanceof z.ZodError) return res.status(400).json({ message: "Invalid request" });
       console.error("Chat error:", err);
-      res.status(500).json({ message: "Chat unavailable right now." });
+      res.status(503).json({ message: "Synergy is busy right now — please try again in a minute." });
     }
   });
 
