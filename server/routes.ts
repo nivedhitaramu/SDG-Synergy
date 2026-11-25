@@ -806,6 +806,7 @@ export async function registerRoutes(
   // AI Matchmaking — finds best org/NGO matches for current user's projects
   app.get('/api/matches/ai-suggestions', async (req, res) => {
     if (!req.session.userId) return res.status(401).json({ message: "Unauthorized" });
+    let fallbackMatchesRef: (() => unknown[]) | null = null;
     try {
       const currentUser = await storage.getUser(req.session.userId);
       if (!currentUser) return res.status(404).json({ message: "User not found" });
@@ -825,6 +826,26 @@ export async function registerRoutes(
       );
 
       if (candidates.length === 0) return res.status(200).json([]);
+
+      // Backup ranking used when the AI provider is unavailable: shared SDGs, location, org-type mix.
+      const fallbackMatches = () => candidates
+        .map(u => {
+          const shared = u.sdgs.filter(sdg => currentUser.sdgs.includes(sdg));
+          const sameCity = !!u.location && u.location === currentUser.location;
+          const complementary = u.orgType !== currentUser.orgType;
+          const score = Math.min(95, 40 + shared.length * 15 + (sameCity ? 10 : 0) + (complementary ? 5 : 0));
+          const parts: string[] = [];
+          parts.push(shared.length
+            ? `You both work on SDG ${shared.join(", SDG ")}, so your goals line up directly.`
+            : `Their SDG focus (SDG ${u.sdgs.join(", ")}) could broaden the impact of your work.`);
+          if (u.expertise) parts.push(`They bring expertise in ${u.expertise.toLowerCase()}.`);
+          if (sameCity) parts.push(`Both based in ${u.location}, which makes on-ground collaboration easy.`);
+          else if (complementary) parts.push(`As a ${u.orgType}, they offer a complementary perspective to yours.`);
+          return { user: u, score, aiReason: parts.join(" ") };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+      fallbackMatchesRef = fallbackMatches;
 
       // Build a compact profile summary for the AI
       const myProfile = `Name: ${currentUser.name}
@@ -864,10 +885,14 @@ Projects: ${userProjects.map(p => `${p.title} (${p.description.slice(0, 80)})`).
           aiReason: m.reason
         }));
 
-      res.status(200).json(results);
+      res.status(200).json(results.length > 0 ? results : fallbackMatches());
     } catch (err) {
-      console.error("AI matchmaking error:", err);
-      res.status(500).json({ message: "AI matchmaking failed" });
+      console.error("AI matchmaking error (using backup ranking):", err);
+      try {
+        res.status(200).json(fallbackMatchesRef?.() ?? []);
+      } catch {
+        res.status(500).json({ message: "AI matchmaking failed" });
+      }
     }
   });
 
