@@ -6,16 +6,65 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import { pool } from "./db";
 import bcrypt from "bcryptjs";
 import { insertUserSchema, insertProjectSchema, insertEventSchema } from "@shared/schema";
 import nodemailer from "nodemailer";
 import OpenAI from "openai";
 import { computeBadges } from "@shared/badges";
 
+// AI provider: works on Replit (built-in integration) and anywhere else via
+// AI_API_KEY / AI_BASE_URL / AI_MODEL (any OpenAI-compatible API, e.g. Google Gemini's free tier).
+const AI_API_KEY = process.env.AI_API_KEY || process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+const AI_BASE_URL = process.env.AI_BASE_URL || process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
+const AI_MODEL = process.env.AI_MODEL; // if unset, the original OpenAI model names are used
+const usingReplitAI = !process.env.AI_API_KEY && !!process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
+const isOpenAIProvider = usingReplitAI || !AI_BASE_URL || AI_BASE_URL.includes("api.openai.com");
+
 const openai = new OpenAI({
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+  apiKey: AI_API_KEY || "missing-ai-key",
+  baseURL: AI_BASE_URL,
 });
+
+// OpenAI's newer models need max_completion_tokens; most other providers expect max_tokens.
+function tokenLimit(n: number) {
+  return isOpenAIProvider ? { max_completion_tokens: n } : { max_tokens: n };
+}
+
+// Some providers wrap JSON in ```json fences — strip them before parsing.
+function parseAIJson(text: string) {
+  const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  return JSON.parse(cleaned);
+}
+
+// Send an email through Brevo's HTTPS API (port 443). Unlike SMTP (port 587),
+// this works on hosts that block SMTP ports, such as Render's free plan.
+async function sendViaBrevoApi(to: string, subject: string, html: string): Promise<boolean> {
+  const apiKey = process.env.BREVO_API_KEY;
+  const senderEmail = process.env.SENDER_EMAIL || process.env.BREVO_LOGIN;
+  if (!apiKey || !senderEmail) return false;
+  try {
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: { "api-key": apiKey, "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({
+        sender: { name: "SDG Synergy", email: senderEmail },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+    });
+    if (res.ok) {
+      console.log(`📧 Email sent via Brevo API to ${to}: "${subject}"`);
+      return true;
+    }
+    console.error(`Brevo API error (${res.status}):`, await res.text());
+  } catch (err) {
+    console.error("Brevo API fetch error:", err);
+  }
+  return false;
+}
 
 declare module 'express-session' {
   interface SessionData {
@@ -51,6 +100,7 @@ const NOTIFICATION_EMAIL_HTML = (title: string, message: string, ctaText: string
 
 async function sendNotificationEmail(email: string, subject: string, title: string, message: string, ctaText: string, ctaUrl: string): Promise<boolean> {
   const html = NOTIFICATION_EMAIL_HTML(title, message, ctaText, ctaUrl);
+  if (await sendViaBrevoApi(email, subject, html)) return true;
   const brevoLogin = process.env.BREVO_LOGIN;
   const brevoKey = process.env.BREVO_SMTP_KEY;
   if (brevoLogin && brevoKey) {
@@ -102,6 +152,9 @@ async function sendNotificationEmail(email: string, subject: string, title: stri
 }
 
 async function sendOTPEmail(email: string, otp: string): Promise<boolean> {
+  // Option 0: Brevo HTTPS API (sends to any email, works where SMTP ports are blocked)
+  if (await sendViaBrevoApi(email, "Your Verification Code - SDG Synergy", OTP_EMAIL_HTML(otp))) return true;
+
   // Option 1: Resend API (preferred)
   const resendKey = process.env.RESEND_API_KEY;
   if (resendKey) {
@@ -370,17 +423,28 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Setup simple sessions
+  // Sessions are stored in Postgres so logins survive restarts and sleeping servers.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "session" (
+      "sid" varchar NOT NULL COLLATE "default" PRIMARY KEY,
+      "sess" json NOT NULL,
+      "expire" timestamp(6) NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "session" ("expire");
+  `);
+  const PgSession = connectPgSimple(session);
+  app.set("trust proxy", 1);
   app.use(session({
+    store: new PgSession({ pool, tableName: "session", createTableIfMissing: false }),
     secret: process.env.SESSION_SECRET || 'sdg_synergy_secret',
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false }
+    cookie: { secure: false, maxAge: 30 * 24 * 60 * 60 * 1000 }
   }));
 
   // Serve the offline demo presentation directly
   app.get("/presentation.html", (_req, res) => {
-    const filePath = path.resolve(import.meta.dirname, "..", "client", "public", "presentation.html");
+    const filePath = path.resolve(process.cwd(), "client", "public", "presentation.html");
     res.setHeader("Content-Type", "text/html");
     res.sendFile(filePath);
   });
@@ -754,7 +818,7 @@ Projects: ${userProjects.map(p => `${p.title} (${p.description.slice(0, 80)})`).
       }).join('\n');
 
       const aiResponse = await openai.chat.completions.create({
-        model: "gpt-5.1",
+        model: AI_MODEL || "gpt-5.1",
         messages: [{
           role: "system",
           content: `You are an SDG collaboration matchmaker. Given a user profile and a list of candidates, rank the top matches and explain WHY each is a good collaboration partner. Focus on SDG alignment, complementary expertise, and project synergy. Be concise and specific.`
@@ -763,11 +827,11 @@ Projects: ${userProjects.map(p => `${p.title} (${p.description.slice(0, 80)})`).
           content: `MY PROFILE:\n${myProfile}\n\nCANDIDATES:\n${candidateList}\n\nReturn a JSON array of the top 5 matches (or fewer if less available). Each item: { "index": number, "score": number (0-100), "reason": string (2-3 sentences explaining the match) }. Score based on SDG overlap, expertise fit, and collaboration potential.`
         }],
         response_format: { type: "json_object" },
-        max_completion_tokens: 1000
+        ...tokenLimit(1000)
       });
 
       const content = aiResponse.choices[0]?.message?.content || '{"matches":[]}';
-      const parsed = JSON.parse(content);
+      const parsed = parseAIJson(content);
       const aiMatches: Array<{index: number; score: number; reason: string}> = parsed.matches || parsed;
 
       const results = aiMatches
@@ -829,12 +893,12 @@ Platform features you can reference:
 Keep responses under 150 words unless explaining an SDG in depth. Use bullet points where helpful. Always be encouraging and specific.`;
 
       const response = await openai.chat.completions.create({
-        model: "gpt-4.1",
+        model: AI_MODEL || "gpt-4.1",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages,
         ],
-        max_completion_tokens: 400,
+        ...tokenLimit(400),
       });
 
       const reply = response.choices[0]?.message?.content || "I couldn't generate a response. Please try again.";
