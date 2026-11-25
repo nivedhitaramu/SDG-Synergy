@@ -289,9 +289,31 @@ async function seedDatabase() {
     console.log("Seed complete.");
   }
 
-  // Ensure we always have enough sample projects and events
+  // Ensure we always have enough sample users, projects and events
+  await ensureSampleUsers();
   await ensureSampleProjects();
   await ensureSampleEvents();
+}
+
+// Extra demo organisations so AI matchmaking always has candidates to suggest.
+// Each is created only if its email is not already in the database.
+async function ensureSampleUsers() {
+  const sampleUsers = [
+    { email: "ocean@bluewaves.org", name: "Blue Waves Foundation", phone: "+91-9876500001", address: "12 Beach Road, Puducherry", orgType: "NGO", location: "Puducherry", sdgs: [6, 14, 13], expertise: "Marine conservation, coastal community programmes" },
+    { email: "solar@sunrise.in", name: "Sunrise Solar Solutions", phone: "+91-9876500002", address: "88 Tech Park, Hyderabad", orgType: "Business", location: "Hyderabad", sdgs: [7, 9, 13], expertise: "Solar installations, rural electrification" },
+    { email: "learn@vidyaseva.org", name: "Vidya Seva Trust", phone: "+91-9876500003", address: "5 Temple Street, Madurai", orgType: "NGO", location: "Madurai", sdgs: [4, 5, 10], expertise: "Rural education, girls' scholarships, teacher training" },
+    { email: "health@carebridge.org", name: "CareBridge Health Network", phone: "+91-9876500004", address: "21 Hospital Lane, Pune", orgType: "NGO", location: "Pune", sdgs: [3, 6, 1], expertise: "Community health camps, sanitation awareness" },
+    { email: "csr@greenbuild.com", name: "GreenBuild Infra Ltd", phone: "+91-9876500005", address: "Plot 9, BKC, Mumbai", orgType: "Business", location: "Mumbai", sdgs: [9, 11, 12], expertise: "Sustainable construction, CSR funding" },
+    { email: "priya.research@iitm.ac.in", name: "Priya Raman (Researcher)", phone: "+91-9876500006", address: "IIT Madras Campus, Chennai", orgType: "Individual", location: "Chennai", sdgs: [2, 13, 15], expertise: "Climate-resilient agriculture research, data analysis" },
+  ];
+
+  let hashedPassword: string | null = null;
+  for (const u of sampleUsers) {
+    if (await storage.getUserByEmail(u.email)) continue;
+    hashedPassword ??= await bcrypt.hash("password", 10);
+    await storage.createUser({ ...u, password: hashedPassword, projects: [], emailVerified: true } as any);
+  }
+  console.log("Sample users ensured.");
 }
 
 async function ensureSampleEvents() {
